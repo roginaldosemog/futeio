@@ -14,13 +14,14 @@ Em 02/11/2026, a E1 foi autorizada e implementada: monorepo, web, API, PostgreSQ
 | Qualidade local | Lint, tipos, 26 testes unitários, 4 de integração, builds e smoke HTTP de produção passaram |
 | CI | GitHub Actions configurado; execução remota aguarda envio ao GitHub |
 | Publicação e uso real | Ainda não realizados |
-| Métricas de qualidade e impacto | Sem resultados coletados |
+| Métricas de uso e impacto | Ainda não coletadas |
 
 ## Documentação
 
 - [Escopo aprovado e desenho do MVP](docs/pitroom/specs/2026-11-02-futeio-mvp-design.md).
 - [Plano das primeiras entregas](docs/pitroom/plans/2026-11-02-primeiras-entregas.md).
 - [Versões e compatibilidade verificadas](docs/compatibilidade.md).
+- [E1: verificações, reprodução limpa e limitações](docs/entregas/E1-fundacao.md).
 - [ADR 0001 — Monorepo e monolito modular](docs/adr/0001-monorepo-e-monolito-modular.md).
 - [ADR 0002 — Identidade e acesso por links](docs/adr/0002-identidade-e-acesso-por-links.md).
 - [ADR 0003 — Avaliações e nota consolidada](docs/adr/0003-avaliacoes-e-nota-consolidada.md).
@@ -97,4 +98,4 @@ Neste computador, os testes usaram PostgreSQL 18.6 portátil, obtido do distribu
 
 ## Evidências para o portfólio
 
-As evidências serão construídas durante a execução: decisões com justificativas, resultados reais dos testes e da CI, exemplos reproduzíveis do sorteio, registros de publicação e feedback da pelada. Tempos, adesão e percepção de equilíbrio só serão apresentados como resultados depois de coletados.
+A E1 já registra decisões e resultados reais das verificações locais. Resultados da CI no GitHub, exemplos do sorteio, publicação e feedback da pelada serão acrescentados nas próximas etapas. Tempos, adesão e percepção de equilíbrio só serão apresentados como resultados depois de coletados.

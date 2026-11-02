@@ -94,9 +94,14 @@ Depois dos testes da tarefa, executar as verificações da CI que ela afeta, ins
 - [x] **Passo 3 — Demonstrar a falha e implementar saúde/conexão.** Executar `pnpm --filter @futeio/api run test:integration --runInBand health.e2e-spec.ts` antes dos endpoints; a falha esperada é ausência do comportamento da rota, não configuração quebrada do runner. Implementar conexão e endpoints; executar o mesmo comando esperando os três cenários passando.
 - [x] **Passo 4 — Integrar a web e documentar a execução limpa.** A página inicial identifica Futeio e o estado de planejamento/desenvolvimento, sem simular funcionalidades prontas. Documentar as variáveis e comandos reais de instalação, subida do banco, migrations, desenvolvimento e testes. Confirmar que a web chega à API pela origem prevista, sem copiar regras para o Next.
 - [x] **Passo 5 — Configurar CI e verificar.** GitHub Actions instala pelo lockfile, gera o cliente Prisma, aplica migrations no PostgreSQL isolado e executa lint, tipos, unitários existentes, integração e builds. Verificar os mesmos comandos localmente; não usar uma suíte vazia como evidência de teste de produto. Testes E2E de produto entram com as jornadas seguintes.
-- [ ] **Passo 6 — Revisar e integrar.** Revisar arquivos gerados, segredos e instruções. Na execução autorizada, inicializar Git somente se ainda necessário e criar o commit revisado `chore: establish web api and database foundation`. Nenhum Git foi inicializado na etapa documental.
+- [x] **Passo 6 — Revisar e integrar.** Revisar arquivos gerados, segredos e instruções. Na execução autorizada, inicializar Git somente se ainda necessário e criar o commit revisado `chore: establish web api and database foundation`. Nenhum Git foi inicializado na etapa documental.
 
 **Conclusão:** um ambiente limpo consegue preparar o banco, executar web/API e repetir os testes de saúde. O README deixa de apresentar comandos como futuros somente depois dessa comprovação. Não declarar publicação nesta entrega.
+
+
+Evidência de E1: código no commit `9038860`, verificado também em cópia limpa. Ver [relatório da entrega](../../entregas/E1-fundacao.md). CI configurada; execução no GitHub pendente de envio dos commits. E2 não foi iniciada.
+
+Adaptação do ambiente em E1: Docker Engine não estava disponível. A definição Compose foi criada e validada com a CLI oficial; os bancos reais usados nos testes foram PostgreSQL 18.6 portátil, com clusters separados. A marcação dos passos registra a implementação e as verificações locais descritas no relatório; não certifica subida de contêineres ou execução do workflow no GitHub.
 
 ### Task 2: E2 — Login administrativo por e-mail autorizado
 

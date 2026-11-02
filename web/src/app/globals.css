@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: Arial, Helvetica, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+  background: #f7f9f8;
+  color: #163b2a;
+}
+
+body {
+  margin: 0;
+  min-width: 20rem;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: #c4e8d3;
+  color: #163b2a;
+}
+
+:focus-visible {
+  outline: 3px solid #286548;
+  outline-offset: 5px;
+}
+
+html {
+  scrollbar-color: #7d9e8c #f7f9f8;
+}

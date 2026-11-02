@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use pitroom-driven-development to implement this plan task-by-task (each task runs as `pitroom run -i --plan <this file> --step N`). Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> **Limite de autorização:** a instrução acima só se aplica após autorização futura de implementação. Em 02/11/2026 o usuário autorizou somente documentação e planejamento. Não executar comandos deste plano, criar aplicações, instalar dependências, inicializar Git, contratar serviços ou publicar com base na existência deste arquivo.
+> **Limite de autorização:** o planejamento começou em 02/11/2026 com autorização somente documental. Em mensagem posterior, o usuário autorizou implementar **apenas E1** e fazer commits com sua autoria. E2–E4 não estão autorizadas. A existência deste arquivo não autoriza contratar serviços, publicar o produto ou executar as entregas seguintes.
 
 **Goal:** Entregar, em uma execução futura autorizada, a base verificável do produto, o acesso administrativo, o cadastro com nota inicial e o acesso restrito dos jogadores por link.
 
@@ -14,7 +14,7 @@
 
 ## Global Constraints
 
-- "Implementação não iniciada e não autorizada por este documento."
+- Autorização atual limitada a E1; E2–E4 continuam planejadas.
 - "O MVP atende um único grupo fechado."
 - "O aplicativo mobile virá depois da validação da web responsiva."
 - "E-mail do jogador não é solicitado no MVP."
@@ -25,7 +25,7 @@
 - Configuração de versões exige consulta oficial na data da execução, registro da matriz e lockfile. Não interpretar versões de tutoriais como compatibilidade verificada.
 - Cada tarefa só é concluída com suas verificações executadas e saída inspecionada. Não marcar testes planejados como passando.
 - Não há Redis, filas, microsserviços, IA ou componentes compartilhados web/mobile nesta execução inicial.
-- Contratos, caminhos e comandos abaixo são futuros. Nenhum arquivo de aplicação citado existe nesta etapa.
+- Caminhos e contratos de E1 foram materializados; os das entregas seguintes continuam futuros. O README registra os comandos já existentes e verificados.
 
 ## Recorte e dependências
 
@@ -35,7 +35,7 @@ Ordem: E1 → E2 → E3 → E4. Não executar tarefas em paralelo sem resolver a
 
 O plano especifica contratos e casos de aceitação. Não contém implementação pronta para transcrição; os testes e o código serão escritos somente na execução autorizada, com as versões já verificadas.
 
-## Mapa de arquivos futuros
+## Mapa previsto de arquivos
 
 | Caminho | Responsabilidade |
 | --- | --- |
@@ -89,11 +89,11 @@ Depois dos testes da tarefa, executar as verificações da CI que ela afeta, ins
 - Produz: workspace com `@futeio/api` e `@futeio/web`; conexão de banco injetável no Nest; `GET /health/live` e `GET /health/ready`; comandos raiz da seção de convenções.
 - `live` retorna `200` com estado simples do processo. `ready` retorna `200` quando o banco responde e `503` quando não responde, sem revelar configuração de conexão.
 
-- [ ] **Passo 1 — Verificar compatibilidade antes de gerar arquivos.** Consultar documentação oficial de Node.js, pnpm, Turbo, Next/React, Nest, Prisma/PostgreSQL, Tailwind e runners de teste; registrar versões exatas, versões mínimas declaradas, fontes e data em `docs/compatibilidade.md`. Verificar especialmente runtime/ESM do Prisma com Nest e versão React exigida pelo Next. Mobile não será instalado agora.
-- [ ] **Passo 2 — Preparar o mínimo necessário ao teste de integração.** Criar workspace web/API, banco local por Compose e banco de teste isolado; validar configuração obrigatória na inicialização. Adicionar teste para `live=200`, `ready=200` com PostgreSQL disponível e `ready=503` com dependência indisponível. Não expor nenhuma tabela de produto por endpoint.
-- [ ] **Passo 3 — Demonstrar a falha e implementar saúde/conexão.** Executar `pnpm --filter @futeio/api run test:integration --runInBand health.e2e-spec.ts` antes dos endpoints; a falha esperada é ausência do comportamento da rota, não configuração quebrada do runner. Implementar conexão e endpoints; executar o mesmo comando esperando os três cenários passando.
-- [ ] **Passo 4 — Integrar a web e documentar a execução limpa.** A página inicial identifica Futeio e o estado de planejamento/desenvolvimento, sem simular funcionalidades prontas. Documentar as variáveis e comandos reais de instalação, subida do banco, migrations, desenvolvimento e testes. Confirmar que a web chega à API pela origem prevista, sem copiar regras para o Next.
-- [ ] **Passo 5 — Configurar CI e verificar.** GitHub Actions instala pelo lockfile, gera o cliente Prisma, aplica migrations no PostgreSQL isolado e executa lint, tipos, unitários existentes, integração e builds. Verificar os mesmos comandos localmente; não usar uma suíte vazia como evidência de teste de produto. Testes E2E de produto entram com as jornadas seguintes.
+- [x] **Passo 1 — Verificar compatibilidade antes de gerar arquivos.** Consultar documentação oficial de Node.js, pnpm, Turbo, Next/React, Nest, Prisma/PostgreSQL, Tailwind e runners de teste; registrar versões exatas, versões mínimas declaradas, fontes e data em `docs/compatibilidade.md`. Verificar especialmente runtime/ESM do Prisma com Nest e versão React exigida pelo Next. Mobile não será instalado agora.
+- [x] **Passo 2 — Preparar o mínimo necessário ao teste de integração.** Criar workspace web/API, banco local por Compose e banco de teste isolado; validar configuração obrigatória na inicialização. Adicionar teste para `live=200`, `ready=200` com PostgreSQL disponível e `ready=503` com dependência indisponível. Não expor nenhuma tabela de produto por endpoint.
+- [x] **Passo 3 — Demonstrar a falha e implementar saúde/conexão.** Executar `pnpm --filter @futeio/api run test:integration --runInBand health.e2e-spec.ts` antes dos endpoints; a falha esperada é ausência do comportamento da rota, não configuração quebrada do runner. Implementar conexão e endpoints; executar o mesmo comando esperando os três cenários passando.
+- [x] **Passo 4 — Integrar a web e documentar a execução limpa.** A página inicial identifica Futeio e o estado de planejamento/desenvolvimento, sem simular funcionalidades prontas. Documentar as variáveis e comandos reais de instalação, subida do banco, migrations, desenvolvimento e testes. Confirmar que a web chega à API pela origem prevista, sem copiar regras para o Next.
+- [x] **Passo 5 — Configurar CI e verificar.** GitHub Actions instala pelo lockfile, gera o cliente Prisma, aplica migrations no PostgreSQL isolado e executa lint, tipos, unitários existentes, integração e builds. Verificar os mesmos comandos localmente; não usar uma suíte vazia como evidência de teste de produto. Testes E2E de produto entram com as jornadas seguintes.
 - [ ] **Passo 6 — Revisar e integrar.** Revisar arquivos gerados, segredos e instruções. Na execução autorizada, inicializar Git somente se ainda necessário e criar o commit revisado `chore: establish web api and database foundation`. Nenhum Git foi inicializado na etapa documental.
 
 **Conclusão:** um ambiente limpo consegue preparar o banco, executar web/API e repetir os testes de saúde. O README deixa de apresentar comandos como futuros somente depois dessa comprovação. Não declarar publicação nesta entrega.

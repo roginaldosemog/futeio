@@ -2,7 +2,7 @@
 
 Data: 02/11/2026, America/Sao_Paulo.
 
-Estado: escopo aprovado pelo responsável do produto, com autorização para registrar decisões e planejar as primeiras entregas. Implementação não iniciada e não autorizada por este documento.
+Estado: escopo aprovado pelo responsável do produto. Após o planejamento, o usuário autorizou somente a implementação de E1, que foi verificada localmente. E2–E9 continuam planejadas; este documento não autoriza sua execução. A CI remota e a publicação não foram realizadas.
 
 ## 1. Problema e público
 
@@ -168,7 +168,7 @@ Testes previstos: Jest para regras puras; Supertest com PostgreSQL real de teste
 
 ## 10. Evidências e resultados
 
-Estado atual: nenhuma funcionalidade implementada, nenhum teste de produto executado, nenhum deploy e nenhuma métrica coletada.
+Estado atual: fundação E1 implementada e verificada localmente, com health checks, migrations, testes e builds. Cadastro, acesso de membros, avaliações e sorteio continuam planejados. Nenhum deploy ou uso pelo grupo ocorreu; nenhuma métrica de impacto foi coletada.
 
 | Pergunta | Coleta proposta | Limite de interpretação |
 | --- | --- | --- |

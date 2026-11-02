@@ -1,0 +1,29 @@
+{
+  "name": "futeio",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "engines": { "node": ">=24.22.1 <25", "pnpm": "11.25.0" },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "eslint scripts && turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test:unit": "node --test scripts/ports.test.mjs scripts/web-config.test.mjs && turbo run test:unit",
+    "test:integration": "turbo run test:integration",
+    "test:smoke": "node --env-file-if-exists=.env scripts/smoke.mjs",
+    "db:generate": "pnpm --filter @futeio/api run db:generate",
+    "db:migrate": "pnpm --filter @futeio/api run db:migrate",
+    "db:test:migrate": "pnpm --filter @futeio/api run db:test:migrate",
+    "services:up": "docker compose up --detach --wait postgres postgres-test",
+    "services:down": "docker compose down",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:integration && pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.14.0",
+    "turbo": "2.11.10",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1"
+  }
+}

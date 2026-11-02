@@ -1,0 +1,43 @@
+{
+  "name": "@futeio/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "dev": "node --env-file-if-exists=../.env node_modules/@nestjs/cli/bin/nest.js start --watch",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node --env-file-if-exists=../.env dist/main.js",
+    "lint": "eslint src test scripts --ignore-pattern src/generated/**",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.unit.config.cjs --runInBand",
+    "test:integration": "node --env-file-if-exists=../.env --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.integration.config.cjs --runInBand",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:test:migrate": "node --env-file-if-exists=../.env scripts/migrate-test-database.cjs"
+  },
+  "dependencies": {
+    "@nestjs/common": "12.3.2",
+    "@nestjs/core": "12.3.2",
+    "@nestjs/platform-express": "12.3.2",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "pg": "8.23.1",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "12.0.11",
+    "@nestjs/testing": "12.3.2",
+    "@types/express": "5.0.6",
+    "@types/jest": "30.0.0",
+    "@types/node": "24.19.2",
+    "@types/pg": "8.23.1",
+    "@types/supertest": "7.2.1",
+    "dotenv": "18.0.9",
+    "jest": "30.5.2",
+    "prisma": "7.10.1",
+    "supertest": "7.3.1",
+    "ts-jest": "29.4.15",
+    "typescript": "5.9.3"
+  }
+}

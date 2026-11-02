@@ -2,7 +2,7 @@
 
 Data: 02/11/2026.
 
-Estado: decisão aceita no planejamento; não implementada.
+Estado: decisão aceita; fundação implementada em E1 com web/API no monorepo, PostgreSQL/Prisma e módulo de saúde. Os módulos de negócio e o mobile permanecem planejados.
 
 ## Contexto
 

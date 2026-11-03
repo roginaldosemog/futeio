@@ -78,7 +78,7 @@ jobs:
         run: pnpm contracts:check
       - name: Production web and API smoke test
         run: pnpm test:smoke
-      - name: Install Chromium for browser tests
-        run: pnpm --filter @futeio/web exec playwright install --with-deps chromium
+      - name: Install stable Google Chrome and browser dependencies
+        run: pnpm --filter @futeio/web exec playwright install --with-deps --no-remove chrome
       - name: Browser authentication journeys
         run: pnpm test:e2e

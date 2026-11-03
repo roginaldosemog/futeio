@@ -12,6 +12,13 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3100',
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [{
+    name: 'chromium',
+    use: {
+      ...devices['Desktop Chrome'],
+      channel: 'chrome',
+      launchOptions: { chromiumSandbox: true },
+    },
+  }],
   // The E2E orchestrator owns both isolated servers and must not reuse a running app.
 });

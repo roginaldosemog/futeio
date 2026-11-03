@@ -57,3 +57,29 @@ Uma revisão independente de segurança/qualidade aprovou o fluxo ativo após co
 Docker Engine não está disponível neste computador: os testes usaram PostgreSQL real portátil. A validação Compose da E1 permanece histórica; não houve execução de contêineres em E2. A CI está configurada com testes de navegador e contratos, mas não foi executada no GitHub. Não houve push, merge ou publicação nesta entrega.
 
 O orçamento compartilhado do proxy deve ser revisto com a topologia de produção. O atributo Secure foi verificado, mas o piloto hospedado com HTTPS, operação, backup/restauração e métricas pertence à E8. Não há métricas de adoção, desempenho ou impacto coletadas. E3 continua dependente de autorização.
+
+## Complemento — Chrome instalado e sandbox no E2E
+
+Data: 03/11/2026. A configuração Chromium passou a selecionar `channel: 'chrome'` e `launchOptions.chromiumSandbox: true`. Mantidos projeto, device, worker único, retries, traces e o orquestrador com servidores isolados em 3100/3101. Não foram encontradas outras inicializações de Chromium no código do projeto.
+
+A fixture de navegador consulta `chrome://version` num contexto temporário, aguarda os campos de executável e linha de comando e fecha esse contexto antes das jornadas. Rejeita executável fora da instalação Chrome, override de executablePath e flags que desativam a sandbox, inclusive com valor ou entre aspas. Não usa o caminho do Chromium empacotado retornado por `browserType.executablePath()` como prova do processo real.
+
+Evidência registrada no E2E final:
+
+```json
+{"executable":"C:/Program Files/Google/Chrome/Application/chrome.exe","version":"156.0.8078.80","channel":"chrome","chromiumSandbox":true,"sandboxDisablingFlags":[]}
+```
+
+- `pnpm test:e2e`: três jornadas passaram com Chrome instalado.
+- Nova execução com `CI=true` no Windows, após a revisão final da fixture: três jornadas passaram, exit 0. A linha de comando efetiva não contém `--no-sandbox` nem as demais flags proibidas.
+- `pnpm --filter @futeio/web run lint` e `pnpm --filter @futeio/web run typecheck`: exit 0.
+- O scanner foi conferido com flags simples, com valor e entre aspas, e com argumentos semelhantes permitidos; não foi necessário iniciar um navegador sem sandbox para essa checagem.
+- O CLI instalado aceitou `playwright install --with-deps --no-remove --dry-run chrome`. Nenhuma instalação local foi executada: o Chrome já estava presente. Playwright e caches compartilhados foram preservados.
+
+A primeira tentativa de diagnóstico por `Browser.getBrowserCommandLine` falhou antes das jornadas: a API exige `--enable-automation`, ausente nos argumentos padrão desta versão. A consulta pela página interna solucionou a coleta da evidência sem alterar os demais argumentos de lançamento.
+
+O workflow Ubuntu 24.04 agora usa o mecanismo oficial `pnpm --filter @futeio/web exec playwright install --with-deps --no-remove chrome`. Instalação e execução são etapas distintas: o browser roda como usuário do runner, com a sandbox solicitada. Não há fallback para Chromium empacotado nem desativação de sandbox. A revisão independente confirmou a configuração e a fixture finais.
+
+Limitação: não houve execução do GitHub Actions/Linux nesta correção. O teste com CI=true no Windows não comprova AppArmor ou as demais camadas de isolamento do Linux. Configuração e ausência das flags demonstram o lançamento verificado; não constituem auditoria completa da sandbox do sistema operacional.
+
+Fontes primárias: [canais e instalação Playwright](https://playwright.dev/docs/browsers#google-chrome--microsoft-edge), [chromiumSandbox](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-option-chromium-sandbox), [implementação da página de versão do Chromium](https://raw.githubusercontent.com/chromium/chromium/main/chrome/browser/ui/webui/version/version_ui.cc) e [restrições de user namespaces/AppArmor](https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md).

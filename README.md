@@ -86,13 +86,18 @@ pnpm audit --prod
 
 `verify` executa lint, tipos, testes unitários, integração com banco real e builds. `test:smoke` inicia as versões compiladas de web/API, verifica HTTP e encaminhamento e encerra seus processos; as portas 3000 e 3001 precisam estar livres. Não é uma suíte de jornadas de cadastro/avaliação.
 
-Para os testes de navegador, prepare o banco de teste e instale Chromium uma vez:
+Os testes de navegador usam o Google Chrome estável instalado no sistema, com `chromiumSandbox: true`. Mantenha o Chrome atualizado. Prepare o banco de teste e execute:
 
 ```sh
 pnpm db:test:migrate
-pnpm --filter @futeio/web exec playwright install chromium
 pnpm test:e2e
 ```
+
+Se o Chrome estiver ausente, instale pelo mecanismo oficial: `pnpm --filter @futeio/web exec playwright install --no-remove chrome`. No CI Linux, o workflow usa `install --with-deps --no-remove chrome` para instalar o canal estável e as dependências do sistema. O navegador roda como o usuário do runner, com sandbox; falhas de instalação ou sandbox interrompem os testes, sem fallback para o Chromium empacotado. A instalação do Chrome é global; `--no-remove` preserva os caches de outros navegadores.
+
+Referências oficiais: [canais Chrome e instalação](https://playwright.dev/docs/browsers#google-chrome--microsoft-edge) e [opção chromiumSandbox](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-option-chromium-sandbox).
+
+A fixture E2E consulta o executável e a linha de comando reais em `chrome://version` antes das jornadas, rejeita executáveis fora da instalação Chrome e flags que desativam a sandbox, incluindo `--no-sandbox`. O log `[browser-policy]` registra executável, versão e resultado dessa verificação. Os testes devem importar `test` de `web/e2e/fixtures.ts` para manter a verificação.
 
 O orquestrador compila API e web, usa credenciais sintéticas e `TEST_DATABASE_URL`, inicia servidores isolados em 3101/3100 e os encerra após os testes. Não utiliza sua conta administrativa local. Ele recompila a web com encaminhamento para 3101: execute `pnpm build` novamente antes de iniciar a web de produção local em 3000 com a API em 3001. Não rode builds simultâneos da mesma pasta web.
 

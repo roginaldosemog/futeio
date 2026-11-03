@@ -1,58 +1,36 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
-import { assertPortsAvailable } from './ports.mjs';
+import { assertPortsAvailable, readPort } from './ports.mjs';
+import { createProcessGroup } from './process-group.mjs';
 
-const apiPort = process.env.API_PORT ?? '3001';
-const children = [];
-
-function launch(args, cwd) {
-  const child = spawn(process.execPath, args, {
-    cwd,
-    env: { ...process.env, NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1' },
-    windowsHide: true,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  const record = { child, output: '', failure: null };
-  child.on('error', (error) => { record.failure = error; });
-  for (const stream of [child.stdout, child.stderr]) {
-    stream.on('data', (data) => { record.output = (record.output + data.toString()).slice(-20000); });
-  }
-  children.push(record);
-}
-
-async function waitFor(url) {
-  let lastStatus = 'unreachable';
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    for (const { child, failure } of children) {
-      if (failure) throw failure;
-      if (child.exitCode !== null) throw new Error(`A smoke-test process exited with code ${child.exitCode}`);
-    }
-    try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(1000) });
-      lastStatus = response.status;
-      if (response.ok) return response;
-    } catch { /* Servers may still be starting. */ }
-    await delay(500);
-  }
-  throw new Error(`Smoke endpoint did not become ready: ${url} (${lastStatus})`);
-}
+const apiPort = readPort(process.env.SMOKE_API_PORT ?? process.env.API_PORT ?? '3001', 'SMOKE_API_PORT');
+const webPort = readPort(process.env.SMOKE_WEB_PORT ?? '3000', 'SMOKE_WEB_PORT');
+const apiOrigin = `http://127.0.0.1:${apiPort}`;
+const webOrigin = `http://127.0.0.1:${webPort}`;
+const group = createProcessGroup();
+const environment = {
+  ...process.env,
+  NODE_ENV: 'production',
+  NEXT_TELEMETRY_DISABLED: '1',
+  API_PORT: String(apiPort),
+  API_HOST: '127.0.0.1',
+  API_ORIGIN: apiOrigin,
+};
 
 try {
-  await assertPortsAvailable([{ host: '127.0.0.1', port: Number(apiPort) }, { host: '127.0.0.1', port: 3000 }]);
-  launch(['dist/main.js'], fileURLToPath(new URL('../api/', import.meta.url)));
-  launch(['node_modules/next/dist/bin/next', 'start', '--port', '3000', '--hostname', '127.0.0.1'], fileURLToPath(new URL('../web/', import.meta.url)));
-  await waitFor(`http://127.0.0.1:${apiPort}/api/v1/health/ready`);
-  const home = await waitFor('http://127.0.0.1:3000');
+  await assertPortsAvailable([{ host: '127.0.0.1', port: apiPort }, { host: '127.0.0.1', port: webPort }]);
+  group.start('Smoke API', ['dist/main.js'], fileURLToPath(new URL('../api/', import.meta.url)), environment);
+  group.start('Smoke web', ['node_modules/next/dist/bin/next', 'start', '--port', String(webPort), '--hostname', '127.0.0.1'], fileURLToPath(new URL('../web/', import.meta.url)), environment);
+  await group.waitForHttp(`${apiOrigin}/api/v1/health/ready`);
+  const home = await group.waitForHttp(webOrigin);
   assert.match(await home.text(), /Futeio/);
-  const forwarded = await waitFor('http://127.0.0.1:3000/api/v1/health/ready');
+  const forwarded = await group.waitForHttp(`${webOrigin}/api/v1/health/ready`);
   assert.match(forwarded.headers.get('content-type') ?? '', /application\/json/);
   assert.ok(forwarded.headers.get('x-request-id'), 'API request identifier must survive the web forwarding');
   console.log('Smoke passed: production web, API, PostgreSQL and same-origin forwarding.');
 } catch (error) {
-  for (const { output } of children) if (output) console.error(output);
-  throw error;
+  console.error(error instanceof Error ? error.message : 'The production smoke validation failed.');
+  process.exitCode = 1;
 } finally {
-  for (const { child } of children) if (child.exitCode === null) child.kill();
+  await group.stop();
 }

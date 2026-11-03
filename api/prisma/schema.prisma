@@ -13,6 +13,83 @@ model Group {
   slug      String   @unique
   name      String
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  memberships Membership[]
 
   @@map("groups")
+}
+
+enum MembershipRole {
+  ADMIN
+  PLAYER
+}
+
+enum SessionRole {
+  ANONYMOUS
+  ADMIN
+  PLAYER
+}
+
+model Identity {
+  id          String       @id @default(uuid()) @db.Uuid
+  email       String?      @unique @db.VarChar(254)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  memberships Membership[]
+
+  @@map("identities")
+}
+
+model Membership {
+  groupId    String         @map("group_id") @db.Uuid
+  identityId String         @map("identity_id") @db.Uuid
+  role       MembershipRole
+  group      Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  identity   Identity       @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  sessions   AccessSession[]
+  loginLinks AdminLoginLink[]
+
+  @@id([groupId, identityId])
+  @@map("memberships")
+}
+
+model AccessSession {
+  id          String        @id @default(uuid()) @db.Uuid
+  tokenHash   String        @unique @map("token_hash") @db.Char(64)
+  role        SessionRole
+  groupId     String?       @map("group_id") @db.Uuid
+  identityId  String?       @map("identity_id") @db.Uuid
+  expiresAt   DateTime      @map("expires_at") @db.Timestamptz(3)
+  revokedAt   DateTime?     @map("revoked_at") @db.Timestamptz(3)
+  credentialVersion String? @map("credential_version") @db.Char(64)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  membership  Membership?   @relation(fields: [groupId, identityId], references: [groupId, identityId], onDelete: Cascade)
+  loginLinks  AdminLoginLink[]
+
+  @@index([expiresAt])
+  @@map("access_sessions")
+}
+
+model AdminLoginLink {
+  id               String        @id @default(uuid()) @db.Uuid
+  tokenHash        String        @unique @map("token_hash") @db.Char(64)
+  groupId          String        @map("group_id") @db.Uuid
+  identityId       String        @map("identity_id") @db.Uuid
+  requestSessionId String        @map("request_session_id") @db.Uuid
+  expiresAt        DateTime      @map("expires_at") @db.Timestamptz(3)
+  usedAt           DateTime?     @map("used_at") @db.Timestamptz(3)
+  revokedAt        DateTime?     @map("revoked_at") @db.Timestamptz(3)
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  membership       Membership    @relation(fields: [groupId, identityId], references: [groupId, identityId], onDelete: Cascade)
+  requestSession   AccessSession @relation(fields: [requestSessionId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("admin_login_links")
+}
+
+model AuthRateLimit {
+  id        String   @id @db.Char(64)
+  count     Int      @default(1)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+
+  @@index([expiresAt])
+  @@map("auth_rate_limits")
 }

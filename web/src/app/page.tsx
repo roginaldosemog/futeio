@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function HomePage() {
   return (
     <div className="flex min-h-svh flex-col">
@@ -8,8 +10,11 @@ export default function HomePage() {
         Pular para o conteúdo
       </a>
 
-      <header className="mx-auto w-full max-w-6xl border-b border-[#d6e2db] px-6 py-7 sm:px-10 sm:py-9">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-5 border-b border-[#d6e2db] px-6 py-7 sm:px-10 sm:py-9">
         <p className="text-2xl font-bold tracking-tight sm:text-3xl">Futeio</p>
+        <Link className="inline-flex min-h-12 items-center rounded-xl border border-[#6b8576] px-5 py-3 font-semibold transition-colors hover:bg-[#e7efea] motion-reduce:transition-none" href="/entrar">
+          Entrar
+        </Link>
       </header>
 
       <main

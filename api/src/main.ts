@@ -6,6 +6,8 @@ import { AppModule } from './app.module';
 import { configureApplication } from './app.setup';
 import type { ApiEnvironment } from './config/environment';
 import { API_ENVIRONMENT } from './config/environment.module';
+import { SwaggerModule } from '@nestjs/swagger';
+import { createOpenApiDocument } from './openapi';
 
 async function bootstrap(): Promise<void> {
   const logger = new ConsoleLogger({ json: true, colors: false });
@@ -14,6 +16,7 @@ async function bootstrap(): Promise<void> {
   try {
     app = await NestFactory.create(AppModule, { logger, abortOnError: false });
     configureApplication(app);
+    SwaggerModule.setup('api/v1/docs', app, createOpenApiDocument(app), { jsonDocumentUrl: 'api/v1/openapi.json', swaggerOptions: { persistAuthorization: false } });
     app.enableShutdownHooks();
     const configuration = app.get<ApiEnvironment>(API_ENVIRONMENT);
     await app.listen(configuration.port, configuration.host);

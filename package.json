@@ -9,9 +9,13 @@
     "build": "turbo run build",
     "lint": "eslint scripts && turbo run lint",
     "typecheck": "turbo run typecheck",
-    "test:unit": "node --test scripts/ports.test.mjs scripts/web-config.test.mjs && turbo run test:unit",
+    "test:unit": "node --test scripts/ports.test.mjs scripts/process-group.test.mjs scripts/web-config.test.mjs && turbo run test:unit",
     "test:integration": "turbo run test:integration",
     "test:smoke": "node --env-file-if-exists=.env scripts/smoke.mjs",
+    "test:e2e": "node --env-file-if-exists=.env scripts/e2e.mjs",
+    "contracts:generate": "node scripts/contracts.mjs --write",
+    "contracts:check": "node scripts/contracts.mjs --check",
+    "admin:configure": "pnpm --filter @futeio/api run build && node api/scripts/configure-admin.cjs",
     "db:generate": "pnpm --filter @futeio/api run db:generate",
     "db:migrate": "pnpm --filter @futeio/api run db:migrate",
     "db:test:migrate": "pnpm --filter @futeio/api run db:test:migrate",
@@ -22,6 +26,7 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "eslint": "10.14.0",
+    "openapi-typescript": "7.13.0",
     "turbo": "2.11.10",
     "typescript": "5.9.3",
     "typescript-eslint": "8.72.1"

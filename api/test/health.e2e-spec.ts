@@ -7,13 +7,15 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { configureApplication } from '../src/app.setup';
+import { AUTH_CONFIGURATION } from '../src/modules/access/auth-configuration';
 import { requireTestDatabaseUrl } from '../scripts/test-database.cjs';
 
 async function createTestApp(databaseUrl: string): Promise<INestApplication> {
   const previousUrl = process.env.DATABASE_URL;
   process.env.DATABASE_URL = databaseUrl;
   try {
-    const module = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const module = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(AUTH_CONFIGURATION).useValue({ adminEmail: 'health@example.test', passwordHash: 'unused fixture', origin: 'http://localhost:3000', secureCookies: false, secret: Buffer.alloc(32, 1) }).compile();
     const app = module.createNestApplication({ logger: false });
     configureApplication(app);
     await app.init();

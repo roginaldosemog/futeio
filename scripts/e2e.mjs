@@ -50,7 +50,12 @@ try {
     console.log('Isolated E2E servers are ready at http://127.0.0.1:3100. Stop this process after the review.');
     await new Promise((resolve) => {
       process.stdin.setEncoding('utf8');
-      process.stdin.on('data', (input) => { if (input.trim() === 'stop') resolve(); });
+      process.stdin.on('data', (input) => {
+        if (input.trim() === 'stop') {
+          process.stdin.pause();
+          resolve();
+        }
+      });
     });
   } else {
     await group.run('Playwright E2E', ['node_modules/@playwright/test/cli.js', 'test', '--config', 'playwright.config.ts'], webDirectory, {

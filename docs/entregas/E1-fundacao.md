@@ -97,6 +97,6 @@ O trabalho foi mantido em branch própria na pasta original. Os commits usam exc
 
 ## Continuidade
 
-Antes de iniciar E2, obter autorização específica para essa entrega e escolher o serviço de e-mail necessário ao login administrativo. Antes de declarar CI verde, enviar os commits e inspecionar o resultado real do workflow. Antes do piloto, cumprir os critérios de publicação/operação de E8.
+Atualização de continuidade em 03/11/2026: o usuário autorizou E2 e adiou envio Resend/link administrativo, substituindo-os por provisionamento manual do único administrador com e-mail e senha. A escolha de serviço de e-mail deixa de ser pré-condição de E2; ver a revisão do [ADR 0002](../adr/0002-identidade-e-acesso-por-links.md) e o [relatório E2](E2-acesso-administrativo.md), ainda com fechamento pendente. O histórico e as verificações acima continuam sendo evidências exclusivamente de E1. Antes de declarar CI verde, enviar os commits e inspecionar o resultado real do workflow. Antes do piloto, cumprir os critérios de publicação/operação de E8.
 
 Não há métricas de desempenho ou impacto do produto neste relatório. Contagens de testes e resultados de comandos são evidências de verificação da fundação.

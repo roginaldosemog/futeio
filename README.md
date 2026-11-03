@@ -4,14 +4,15 @@ Produto para ajudar uma pelada amadora a definir notas de habilidade e formar ti
 
 ## Estado do projeto
 
-Em 02/11/2026, a E1 foi autorizada e implementada: monorepo, web, API, PostgreSQL, migrations e configuração de CI. A fundação passou nas verificações locais. O MVP funcional e as entregas seguintes continuam planejados.
+Em 03/11/2026, E1 e E2 estão implementadas e verificadas localmente. A E2 permite acesso de um administrador provisionado com e-mail e senha; o envio por Resend foi adiado. Cadastro de jogadores, avaliações e sorteio continuam em entregas posteriores.
 
 | Categoria | Estado |
 | --- | --- |
 | Escopo e decisões | Registrados nos documentos abaixo |
-| Web e API | Fundação executável; sem cadastro, login ou avaliações |
-| Banco | Prisma, migration e grupo piloto, sem dados reais de jogadores |
-| Qualidade local | Lint, tipos, 26 testes unitários, 4 de integração, builds e smoke HTTP de produção passaram |
+| Web e API | Login administrativo, sessão protegida e saída; sem cadastro de jogadores ou avaliações |
+| Banco | Grupo piloto e evolução de identidade/sessão administrativa; sem dados reais de jogadores |
+| Qualidade local de E1 | Lint, tipos, 26 testes unitários, 4 de integração, builds e smoke HTTP de produção passaram em E1 |
+| Qualidade de E2 | Lint, tipos, 77 testes unitários, 19 de integração, 3 de navegador, builds, contratos e smoke passaram |
 | CI | GitHub Actions configurado; execução remota aguarda envio ao GitHub |
 | Publicação e uso real | Ainda não realizados |
 | Métricas de uso e impacto | Ainda não coletadas |
@@ -22,8 +23,9 @@ Em 02/11/2026, a E1 foi autorizada e implementada: monorepo, web, API, PostgreSQ
 - [Plano das primeiras entregas](docs/pitroom/plans/2026-11-02-primeiras-entregas.md).
 - [Versões e compatibilidade verificadas](docs/compatibilidade.md).
 - [E1: verificações, reprodução limpa e limitações](docs/entregas/E1-fundacao.md).
+- [E2: acesso administrativo e verificações](docs/entregas/E2-acesso-administrativo.md).
 - [ADR 0001 — Monorepo e monolito modular](docs/adr/0001-monorepo-e-monolito-modular.md).
-- [ADR 0002 — Identidade e acesso por links](docs/adr/0002-identidade-e-acesso-por-links.md).
+- [ADR 0002 — Identidade, acesso administrativo e links de jogadores](docs/adr/0002-identidade-e-acesso-por-links.md).
 - [ADR 0003 — Avaliações e nota consolidada](docs/adr/0003-avaliacoes-e-nota-consolidada.md).
 - [ADR 0004 — Sorteio explicável e reproduzível](docs/adr/0004-sorteio-explicavel-e-reproduzivel.md).
 - [ADR 0005 — Contratos e fronteiras dos clientes](docs/adr/0005-contratos-e-fronteiras-dos-clientes.md).
@@ -57,12 +59,15 @@ pnpm services:up
 pnpm db:generate
 pnpm db:migrate
 pnpm db:test:migrate
+pnpm admin:configure
 pnpm dev
 ```
 
 - Web: [localhost:3000](http://localhost:3000).
 - API: [liveness](http://127.0.0.1:3001/api/v1/health/live) e [readiness](http://127.0.0.1:3001/api/v1/health/ready).
 - Encaminhamento pela web: [readiness sob a mesma origem](http://localhost:3000/api/v1/health/ready).
+- Acesso administrativo: [entrar](http://localhost:3000/entrar).
+- Contrato da API: [OpenAPI JSON](http://127.0.0.1:3001/api/v1/openapi.json) e [Swagger](http://127.0.0.1:3001/api/v1/docs).
 
 `live` retorna 200 se o processo estiver disponível. `ready` consulta o PostgreSQL e retorna 200 ou 503 com mensagem sanitizada. As respostas recebem `x-request-id`.
 
@@ -79,7 +84,17 @@ pnpm peers check
 pnpm audit --prod
 ```
 
-`verify` executa lint, tipos, testes unitários, integração com banco real e builds. `test:smoke` inicia as versões compiladas de web/API, verifica HTTP e encaminhamento e encerra seus processos; as portas 3000 e 3001 precisam estar livres. Não é uma suíte de jornadas de cadastro/avaliação. O comando `test:e2e` será acrescentado com essas jornadas.
+`verify` executa lint, tipos, testes unitários, integração com banco real e builds. `test:smoke` inicia as versões compiladas de web/API, verifica HTTP e encaminhamento e encerra seus processos; as portas 3000 e 3001 precisam estar livres. Não é uma suíte de jornadas de cadastro/avaliação.
+
+Para os testes de navegador, prepare o banco de teste e instale Chromium uma vez:
+
+```sh
+pnpm db:test:migrate
+pnpm --filter @futeio/web exec playwright install chromium
+pnpm test:e2e
+```
+
+O orquestrador compila API e web, usa credenciais sintéticas e `TEST_DATABASE_URL`, inicia servidores isolados em 3101/3100 e os encerra após os testes. Não utiliza sua conta administrativa local. Ele recompila a web com encaminhamento para 3101: execute `pnpm build` novamente antes de iniciar a web de produção local em 3000 com a API em 3001. Não rode builds simultâneos da mesma pasta web.
 
 Para executar as versões compiladas manualmente, após `pnpm build`, use terminais separados:
 
@@ -89,6 +104,29 @@ pnpm --filter @futeio/web start
 ```
 
 `API_ORIGIN` é configuração de servidor do Next e participa do hash do build. Alterá-la exige novo build para produção. A web carrega `.env` da raiz por API nativa do Node, sem passar a opção de arquivo de ambiente aos workers de build.
+
+## Administrador local — E2
+
+`pnpm admin:configure` compila a API e executa o helper `api/scripts/configure-admin.cjs`, que solicita e-mail e senha com entrada oculta. Execute-o depois da geração Prisma. O helper exige `.env` ignorado pelo Git, grava o hash com aspas no ambiente local e não imprime senha ou hash. Identidade e vínculo administrativo só são criados ou reutilizados no banco após login válido; não há cadastro público.
+
+| Variável | Uso |
+| --- | --- |
+| `ADMIN_EMAIL` | Único e-mail administrativo autorizado; não define e-mail para jogadores |
+| `ADMIN_PASSWORD_HASH` | Hash scrypt provisionado; nunca a senha em texto puro |
+| `APP_ORIGIN` | Origem exata da web, com HTTPS ou HTTP apenas em loopback; sem caminho, query, fragmento ou credenciais |
+| `AUTH_SECRET` | Segredo aleatório de 32 bytes codificado em base64url, gerado pelo helper se ausente |
+
+Para automação controlada, após compilar a API, `node api/scripts/configure-admin.cjs --stdin` recebe JSON com as chaves `email` e `password` pela entrada padrão. Não passe credenciais como argumentos nem as escreva em exemplos de comandos ou arquivos versionados. A forma interativa evita colocar a senha no histórico do shell. O helper aceita senha de 10 a 256 caracteres.
+
+Depois de alterar e-mail ou senha, reinicie a API. A versão da credencial é conferida nas sessões administrativas e invalida as antigas após a reinicialização. Recuperação em E2 é novo provisionamento local autorizado, sem fluxo público de recuperação de senha.
+
+O navegador usa `futeio_session`, `HttpOnly`, `SameSite=Lax` e `Secure` em HTTPS, com sessão administrativa de oito horas e revogação no servidor. Login e logout exigem a origem exata e token CSRF obtido em `GET /api/v1/auth/csrf`; renove o token após a rotação de sessão no login. O banco armazena hashes dos tokens.
+
+Há limites por janela de 15 minutos: dez logins por peer de rede, cinco por e-mail e 60 solicitações CSRF por peer. Sem confiança em `X-Forwarded-For`, clientes encaminhados pelo Next compartilham o orçamento do proxy nesta etapa. O envio Resend e o login administrativo por link estão adiados: o adaptador não está registrado e não há rotas de solicitação/resgate de link administrativo.
+
+Após compilar a API, `pnpm contracts:generate` atualiza o contrato OpenAPI e os tipos de cliente; `pnpm contracts:check` verifica divergência sem depender de credenciais locais. As quatro variáveis administrativas também são repassadas pelo Turbo quando fornecidas pelo ambiente do processo. Os resultados estão no relatório E2.
+
+Os jogadores continuam com acesso por link pessoal sem e-mail ou senha nas entregas E3/E4. E2 não implementa nem autoriza essas entregas.
 
 ## CI e limites da verificação
 

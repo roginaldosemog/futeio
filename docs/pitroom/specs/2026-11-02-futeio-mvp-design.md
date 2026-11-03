@@ -2,7 +2,7 @@
 
 Data: 02/11/2026, America/Sao_Paulo.
 
-Estado: escopo aprovado pelo responsável do produto. Após o planejamento, o usuário autorizou somente a implementação de E1, que foi verificada localmente. E2–E9 continuam planejadas; este documento não autoriza sua execução. A CI remota e a publicação não foram realizadas.
+Estado: escopo aprovado pelo responsável do produto. E1 foi implementada e verificada localmente. Em 03/11/2026, o usuário autorizou E2 e substituiu temporariamente o link de login administrativo por provisionamento manual de e-mail e senha; envio Resend fica adiado. E2 está em implementação/validação, com fechamento de verificações pendente. E3–E9 continuam planejadas e não são autorizadas por esta revisão. Resultados remotos e publicação exigem evidência própria.
 
 ## 1. Problema e público
 
@@ -15,7 +15,7 @@ O administrador seleciona 20 jogadores de linha para cada sorteio, distribuídos
 | ID | Comportamento |
 | --- | --- |
 | RF-01 | Somente membros do grupo acessam perfis e avaliações. Não há cadastro público de grupos. |
-| RF-02 | O administrador acessa com seu e-mail autorizado, por link temporário de login enviado a esse endereço. Digitar o endereço não concede acesso. |
+| RF-02 | Exceção E2 aprovada em 03/11/2026: o único administrador acessa com e-mail e senha provisionados manualmente. O link administrativo e o envio Resend originalmente previstos ficam adiados; somente digitar o e-mail não concede acesso. |
 | RF-03 | O administrador cadastra jogadores com nome e nota inicial obrigatória, inteira de 0 a 10. E-mail do jogador não é solicitado no MVP. |
 | RF-04 | Cada cadastro gera um link pessoal de acesso, para o administrador compartilhar manualmente. O jogador já pode participar dos sorteios antes de acessar. |
 | RF-05 | O jogador acessa pelo link, pode editar seu nome e foto e não recebe permissões administrativas. Não cria usuário ou senha. |
@@ -34,7 +34,7 @@ O cadastro exige nome e nota, além dos identificadores internos gerados pelo si
 
 ### Administrador
 
-1. Solicita um link de login para seu e-mail previamente autorizado e confirma o acesso.
+1. Recebe provisionamento manual de e-mail e senha e autentica pela web com sessão e proteção CSRF. O link de login administrativo fica adiado em E2.
 2. Cadastra um jogador com nome e nota inicial.
 3. Copia o link pessoal gerado e envia ao jogador pelo canal que já utiliza, como WhatsApp.
 4. Consulta perfis e avaliações com identificação dos autores.
@@ -130,9 +130,9 @@ O Nest publica OpenAPI como contrato REST. Tipos de clientes são derivados dess
 
 ## 7. Acesso, operação e interface
 
-O [ADR 0002](../../adr/0002-identidade-e-acesso-por-links.md) distingue o link temporário, de uso único, do administrador e a credencial reutilizável e revogável dos jogadores. Sessões e revogação podem ser mantidas no PostgreSQL. Acesso a fotos e caches de dados privados também respeitam o grupo.
+O [ADR 0002](../../adr/0002-identidade-e-acesso-por-links.md) registra a revisão de 03/11/2026: e-mail/senha provisionados para o único administrador em E2, com link administrativo e envio Resend adiados. O futuro link reutilizável e revogável dos jogadores permanece em E3/E4. Sessões e revogação ficam no PostgreSQL; E2 usa cookie administrativo de oito horas, CSRF vinculado à sessão, origem exata e limites de tentativas. Acesso a fotos e caches de dados privados também respeitam o grupo.
 
-Nome, e-mail administrativo e credenciais não entram em logs de requisição. Fotos terão limites de tamanho e tipo, validação do conteúdo, nomes internos gerados pelo servidor e entrega somente a membros. Armazenamento de objetos e serviço transacional de e-mail são necessidades reais; seus provedores serão escolhidos antes das entregas dependentes deles.
+Nome, e-mail administrativo e credenciais não entram em logs de requisição. Fotos terão limites de tamanho e tipo, validação do conteúdo, nomes internos gerados pelo servidor e entrega somente a membros. Armazenamento de objetos será escolhido antes do upload; serviço transacional de e-mail só passa a ser dependência de execução quando o envio adiado for retomado. E2 não depende de Resend configurado.
 
 Os formulários precisam de rótulos, validação compreensível e estados de carregamento, erro, vazio e sucesso. Avaliar e selecionar os 20 participantes deve funcionar por teclado e em telas pequenas. Tailwind permanece como ferramenta de estilos; primitivas de interação e Storybook entram somente quando houver necessidade e componentes suficientes.
 
@@ -153,7 +153,7 @@ O registro imutável guarda IDs dos participantes, notas usadas, times, semente,
 | Entrega | Resultado | Evidência requerida antes de concluir |
 | --- | --- | --- |
 | E1 — Fundação | Web/API/banco conectados e execução documentada | Instalação limpa, migrations, verificação de saúde, CI e builds |
-| E2 — Acesso administrativo | E-mail autorizado gera login temporário e sessão | Validade, uso único, autorização, expiração e envio em ambiente de teste |
+| E2 — Acesso administrativo | Único administrador provisionado com e-mail/senha, sessão e contrato OpenAPI | Login válido/inválido, bootstrap após validação, rotação, logout, expiração, CSRF/origem, rate limit e invalidação após reprovisionamento/reinício; validação final pendente |
 | E3 — Cadastro | Administrador cria perfil, nota inicial e link | Transação íntegra, controle de acesso, validação e ausência de segredos em logs |
 | E4 — Acesso do jogador | Link abre sessão restrita e pode ser substituído | Revogação de link e sessões, negação de ações administrativas |
 | E5 — Perfil | Edição de nome e foto | Autorização, upload validado e armazenamento privado |
@@ -168,7 +168,7 @@ Testes previstos: Jest para regras puras; Supertest com PostgreSQL real de teste
 
 ## 10. Evidências e resultados
 
-Estado atual: fundação E1 implementada e verificada localmente, com health checks, migrations, testes e builds. Cadastro, acesso de membros, avaliações e sorteio continuam planejados. Nenhum deploy ou uso pelo grupo ocorreu; nenhuma métrica de impacto foi coletada.
+Estado atual: E1 implementada e verificada localmente. E2 foi autorizada em 03/11/2026 e está em implementação/validação; o fechamento de comandos e resultados pertence ao relatório E2, ainda pendente. Cadastro de jogadores, avaliações e sorteio não foram entregues. Não há métricas de impacto; verificações locais não comprovam publicação ou execução remota da CI.
 
 | Pergunta | Coleta proposta | Limite de interpretação |
 | --- | --- | --- |

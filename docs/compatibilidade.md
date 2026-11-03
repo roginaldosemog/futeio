@@ -1,6 +1,8 @@
-# Matriz de compatibilidade — E1
+# Matriz de compatibilidade — E1 e adições de E2
 
 Consulta: 02/11/2026. Esta matriz registra a seleção, os ajustes de compatibilidade e a homologação local da E1. As dependências diretas são fixadas e o lockfile registra a árvore resolvida. Verificações de produção remota e uso pelo grupo não estão incluídas.
+
+Atualização E2: 03/11/2026. O baseline Node **24.22.1** foi preservado. As novas dependências abaixo foram conferidas nos manifests e metadados primários das versões publicadas. Instalação com peers estritos, verificações integradas, builds e navegador passaram localmente; ver o relatório da entrega.
 
 | Componente | Versão selecionada | Critério |
 | --- | --- | --- |
@@ -22,6 +24,24 @@ Consulta: 02/11/2026. Esta matriz registra a seleção, os ajustes de compatibil
 | Supertest | 7.3.1 | Integração HTTP da API |
 | Tipos Node / React / React DOM | 24.19.2 / 19.3.0 / 19.3.0 | Linhas correspondentes aos runtimes escolhidos |
 
+## Adições de E2
+
+| Dependência | Versão | Compatibilidade declarada/uso |
+| --- | --- | --- |
+| @nestjs/swagger | 12.1.0 | Nest common/core ^12, TypeScript ^5.5 ou ^6; Node ^20.19 ou >=22.12; contrato e Swagger |
+| class-validator / class-transformer | 0.15.1 / 0.5.1 | Validação e transformação dos DTOs; versões aceitas pelos peers do Swagger selecionado |
+| openapi-typescript | 7.13.0 | Peer TypeScript ^5.x, atendido por 5.9.3; geração dos tipos consumidos pela web |
+| @testing-library/react | 16.3.3 | React/React DOM ^18 ou ^19 e DOM ^10; Node >=18 |
+| @testing-library/dom | 10.4.2 | Node >=18; base dos testes de interação |
+| @testing-library/user-event | 14.6.8 | DOM >=7.21.4 e Node >=12 |
+| @testing-library/jest-dom | 7.0.1 | DOM >=10 e <11; Node >=22 |
+| jest-environment-jsdom | 30.5.2 | Alinhado ao Jest 30.5.2; Node 24 aceito |
+| @playwright/test | 1.64.1 | Node >=20; navegador administrativo e verificações próprias da jornada |
+
+Não há novo pacote de hashing: scrypt e HMAC usam `node:crypto` do runtime fixado. A consulta à documentação da linha Node 24 não autoriza atualização para outro patch. Resend está adiado; seu adaptador não está conectado ao módulo de acesso e E2 não depende de SDK ou chave do serviço.
+
+Os metadados primários foram consultados em `https://registry.npmjs.org/<pacote>/<versão>` para as versões acima. Peers satisfeitos e metadados compatíveis são pré-condições; não substituem testes e builds integrados.
+
 ## Decisões de compatibilidade
 
 1. Não instalar `prisma@latest`: a tag consultada aponta para `8.0.0-rc.29`, com fluxo diferente. A documentação do Nest orienta explicitamente Prisma 7 para migrations e geração deste desenho.
@@ -37,6 +57,8 @@ Consulta: 02/11/2026. Esta matriz registra a seleção, os ajustes de compatibil
 11. O build Next observado propaga opções do processo pai para workers, que rejeitam `--env-file-if-exists` em `NODE_OPTIONS`. A web usa comandos Next diretos e `process.loadEnvFile` na configuração, com pacote ESM explícito. A API continua carregando seu ambiente pelo Node; seu modo watch e o binário compilado foram verificados.
 
 ## Fontes oficiais
+
+Referências de E2: [OpenAPI no Nest](https://docs.nestjs.com/openapi/introduction), [crypto na linha Node 24](https://nodejs.org/docs/latest-v24.x/api/crypto.html), [armazenamento de senhas OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html) e [CSRF OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html). Parâmetros e limites específicos implementados estão no ADR 0002; não são uma certificação de segurança.
 
 - [Node: linhas LTS](https://nodejs.org/en/about/previous-releases).
 - [Next: instalação e requisitos](https://nextjs.org/docs/app/getting-started/installation).

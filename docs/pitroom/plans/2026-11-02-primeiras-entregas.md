@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use pitroom-driven-development to implement this plan task-by-task (each task runs as `pitroom run -i --plan <this file> --step N`). Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> **Limite de autorização:** o planejamento começou em 02/11/2026 com autorização somente documental. Em mensagem posterior, o usuário autorizou implementar **apenas E1** e fazer commits com sua autoria. E2–E4 não estão autorizadas. A existência deste arquivo não autoriza contratar serviços, publicar o produto ou executar as entregas seguintes.
+> **Limite de autorização:** E1 foi autorizada e verificada localmente. Em 03/11/2026, o usuário autorizou E2 com provisionamento manual do único administrador por e-mail/senha e adiou Resend/link administrativo. E3–E4 não estão autorizadas. A existência deste arquivo não autoriza contratar serviços, publicar o produto ou executar as entregas seguintes.
 
 **Goal:** Entregar, em uma execução futura autorizada, a base verificável do produto, o acesso administrativo, o cadastro com nota inicial e o acesso restrito dos jogadores por link.
 
@@ -14,7 +14,7 @@
 
 ## Global Constraints
 
-- Autorização atual limitada a E1; E2–E4 continuam planejadas.
+- Autorização atual abrange E1 e E2 revisada em 03/11/2026; E3–E4 continuam planejadas e não autorizadas.
 - "O MVP atende um único grupo fechado."
 - "O aplicativo mobile virá depois da validação da web responsiva."
 - "E-mail do jogador não é solicitado no MVP."
@@ -99,35 +99,40 @@ Depois dos testes da tarefa, executar as verificações da CI que ela afeta, ins
 **Conclusão:** um ambiente limpo consegue preparar o banco, executar web/API e repetir os testes de saúde. O README deixa de apresentar comandos como futuros somente depois dessa comprovação. Não declarar publicação nesta entrega.
 
 
-Evidência de E1: código no commit `9038860`, verificado também em cópia limpa. Ver [relatório da entrega](../../entregas/E1-fundacao.md). CI configurada; execução no GitHub pendente de envio dos commits. E2 não foi iniciada.
+Evidência de E1: código no commit `9038860`, verificado também em cópia limpa. Ver [relatório da entrega](../../entregas/E1-fundacao.md). A execução de E2 foi autorizada posteriormente, em 03/11/2026; seu [relatório](../../entregas/E2-acesso-administrativo.md) ainda aguarda verificações finais. A conclusão de E1 não certifica CI remota ou publicação.
 
 Adaptação do ambiente em E1: Docker Engine não estava disponível. A definição Compose foi criada e validada com a CLI oficial; os bancos reais usados nos testes foram PostgreSQL 18.6 portátil, com clusters separados. A marcação dos passos registra a implementação e as verificações locais descritas no relatório; não certifica subida de contêineres ou execução do workflow no GitHub.
 
-### Task 2: E2 — Login administrativo por e-mail autorizado
+### Task 2: E2 — Administrador provisionado com e-mail e senha
 
 **Worker:** capable
 
+Estado em 03/11/2026: E2 implementada e verificada localmente no commit `22742a2`. O usuário adiou o envio Resend e o link administrativo. Evidências no [relatório E2](../../entregas/E2-acesso-administrativo.md). E3 e seguintes permanecem fora desta autorização.
+
 **Files:**
-- Criar: `api/src/modules/access/access.module.ts`, `access.controller.ts`, `admin-login.service.ts`, `session.service.ts`, `email-sender.port.ts`, adaptador de e-mail e `admin.guard.ts`.
-- Alterar: `api/prisma/schema.prisma`, migrations, `.env.example` e configuração da API para a identidade administrativa e grupo piloto.
-- Criar: `web/src/features/access/admin-login-form.tsx`, `web/src/app/entrar/page.tsx` e `web/src/app/acesso/administrador/page.tsx`.
-- Criar: publicação OpenAPI e geração dos tipos de acesso consumidos pela web; criar pacote em `packages/` somente se esta for a forma selecionada de distribuição do contrato.
-- Testar: `api/test/admin-access.e2e-spec.ts`, `api/src/modules/access/admin-login.service.spec.ts`, `web/src/features/access/admin-login-form.test.tsx` e `web/e2e/admin-access.spec.ts`.
+- Acesso: `api/src/modules/access/` com configuração, password, sessão, CSRF, guard administrativo, rate limit, DTOs e controller. O adaptador Resend existente fica desconectado e sem rotas de envio/resgate.
+- Provisionamento: `api/scripts/configure-admin.cjs`; configuração documentada em `.env.example`, com valores reais somente no `.env` ignorado.
+- Persistência: schema e migrations de identidade, vínculo, sessão e contadores de limite no PostgreSQL.
+- Contratos: `api/src/openapi.ts`, `api/scripts/generate-openapi.cjs`, `api/openapi.json` e tipos gerados consumidos pela web, sem Prisma no cliente.
+- Interface: `web/src/features/access/`, `web/src/app/entrar/page.tsx` e `web/src/app/administracao/page.tsx`.
+- Testes: password/configuração/CSRF e sessão na API, `api/test/admin-access.e2e-spec.ts`, testes RTL em `web/src/features/access/` e `web/e2e/admin-access.spec.ts`.
 
 **Interfaces:**
-- Consome: conexão e convenções de E1; apenas um grupo piloto provisionado internamente.
-- Produz: `POST /auth/admin/request-link` com e-mail, `POST /auth/admin/redeem` com credencial, `GET /auth/me`, `POST /auth/logout`, `AccessContext` e guard administrativo reutilizável.
-- Solicitar link de e-mail autorizado ou não autorizado responde `202` com a mesma mensagem; só o autorizado recebe e-mail. Redeem válido cria sessão `ADMIN`; inválido, expirado ou já usado retorna `401`. `me` retorna `SessionView` ou `401`; logout invalida a sessão atual.
+- Consome: banco, grupo piloto e regras de ambiente de E1. Não depende de chave ou entrega Resend.
+- Produz: `GET /auth/csrf`, `POST /auth/admin/login` com e-mail/senha, `GET /auth/me`, `POST /auth/logout`, contexto autenticado e guard administrativo reutilizável. Prefixo externo: `/api/v1`.
+- Login e logout exigem origem exata e `x-csrf-token`. Login válido retorna 200 e sessão ADMIN; e-mail desconhecido ou senha incorreta retorna 401 genérico, sem criar identidade. Entrada malformada retorna 400; falha de origem/CSRF retorna 403; limite excedido retorna 429 e Retry-After.
+- `GET /auth/csrf` cria/reutiliza contexto de navegador e fornece HMAC vinculado à sessão. Login rotaciona a sessão, revoga a anterior e exige renovar o CSRF. Cookie `futeio_session`: HttpOnly, SameSite=Lax, Secure em HTTPS, TTL administrativo de oito horas e hash persistido no banco.
+- Publica OpenAPI em `/api/v1/openapi.json` e Swagger em `/api/v1/docs`. Não publica rotas `admin/request-link` ou `admin/redeem`.
 
-- [ ] **Passo 1 — Fixar o adaptador e parâmetros antes do código dependente.** Escolher serviço transacional e mecanismo de teste, documentando custo, configuração e recuperação de falha de envio. A escolha não autoriza contratação paga sem alinhamento. Registrar expiração inicial de 15 minutos para o link e, como ponto de partida técnico, sessão administrativa de oito horas de duração absoluta. Limites de tentativas devem ter valores explícitos no teste e configuração antes da conclusão.
-- [ ] **Passo 2 — Escrever os cenários de acesso.** Cobrir e-mail permitido/proibido com resposta pública equivalente; prova de que informar e-mail não autentica; token inválido, expirado e repetido; dois resgates concorrentes com um único sucesso; sessão expirada; logout; requisição protegida sem sessão; bloqueio por origem/CSRF e por excesso de tentativas. Testes de tempo usam relógio controlado.
-- [ ] **Passo 3 — Executar os testes e implementar o mínimo.** Rodar `pnpm --filter @futeio/api run test:integration --runInBand admin-access.e2e-spec.ts`, registrar a falha de comportamento e implementar identidade, envio, consumo atômico e sessão. Guardar somente hashes dos segredos. Usar adaptador falso em testes determinísticos; testar separadamente o adaptador real com destino controlado pelo responsável.
-- [ ] **Passo 4 — Fixar o contrato do primeiro consumidor interativo.** Publicar endpoints e DTOs de autenticação em OpenAPI, escolher a geração de tipos compatível com a matriz e produzir os tipos consumidos pela web antes da jornada de login. A CI verifica divergências; clientes não importam Prisma. Usar apenas segredos fictícios nos exemplos Swagger. A verificação de encaminhamento de saúde de E1 não exige um cliente interativo de produto.
-- [ ] **Passo 5 — Implementar a jornada web.** Usar os contratos gerados no formulário rotulado, confirmação genérica de envio, tratamento de link vencido e entrada administrativa. Validar resgate e cookie seguro; remover a credencial da URL e impedir cache de dados de sessão. A página de resgate não carrega scripts/recursos de terceiros que recebam a credencial. Nenhum segredo é escrito em logs.
-- [ ] **Passo 6 — Verificar integração e navegador.** Repetir a integração, executar `pnpm --filter @futeio/web run test:unit --runInBand admin-login-form.test.tsx` e `pnpm run test:e2e admin-access.spec.ts`. Inspecionar cookie, erros e logs de teste com credenciais fictícias. Validar envio real em ambiente controlado antes de declarar o login pronto para o piloto; usar somente fake não comprova entrega de e-mail.
-- [ ] **Passo 7 — Revisar e integrar.** Atualizar instruções de bootstrap, e-mail e revogação administrativa, manter segredos fora do repositório e registrar fontes dos controles no ADR 0002. Commit futuro revisado: `feat: authenticate administrator with email access link`.
+- [x] **Passo 1 — Provisionar sem versionar segredos.** Validar ADMIN_EMAIL, ADMIN_PASSWORD_HASH, APP_ORIGIN e AUTH_SECRET. O hash usa scrypt N=32768/r=8/p=3, salt de 16 bytes e chave de 64 bytes em base64url; o segredo tem 32 bytes. Gerar Prisma e compilar API antes de usar `pnpm admin:configure`; o helper solicita senha oculta ou recebe JSON por stdin, exige `.env` ignorado e grava hash entre aspas. Criar/reutilizar identidade e vínculo ADMIN apenas após login válido. Alterar credenciais exige reinício e invalida sessões antigas por credentialVersion.
+- [x] **Passo 2 — Registrar RED/GREEN dos cenários relevantes.** Cobrir hash diferente com salts distintos, senha incorreta e hash malformado, configuração inválida e origem insegura. Na integração com PostgreSQL real: login autorizado, e-mail desconhecido, senha incorreta, ausência de CSRF, token de outra sessão, origem incorreta, sessão expirada/revogada, logout, rotação concorrente com um vencedor e credenciais reprovisionadas após reinício. Registrar os comandos e resultados no relatório, não apenas a existência dos testes.
+- [x] **Passo 3 — Implementar sessão, autorização e limites.** Manter tokens crus fora do banco/logs; não usar localStorage para sessão. Aplicar contadores atômicos em janela fixa de 15 minutos: login 10 por peer e 5 por e-mail; CSRF 60 por peer. Não confiar em X-Forwarded-For; documentar orçamento compartilhado no proxy Next. Testar o bloqueio real e reinício da janela com relógio controlado; não substituir banco por mock para comprovar concorrência.
+- [x] **Passo 4 — Fixar contrato reproduzível do primeiro consumidor.** Decorar DTOs/rotas, gerar OpenAPI e tipos com `pnpm contracts:generate`, verificar divergência com `pnpm contracts:check` e consumir os tipos na web. Geração usa fixtures isoladas e não credenciais locais. Os contratos não contêm hashes ou segredos, nem rotas de envio/resgate adiadas. Não exportar Prisma para o cliente.
+- [x] **Passo 5 — Implementar a jornada web.** Formulário e-mail/senha em `/entrar`, sessão e saída em `/administracao`, proteção da área administrativa e tratamento de 401/403/429 e falhas de rede. Buscar CSRF antes do login e renová-lo após a rotação; não repetir silenciosamente um login ou logout com resultado incerto. Rótulos, foco, teclado e estados de envio devem ser testados. Não simular cadastro de jogadores que só será implementado em E3.
+- [x] **Passo 6 — Verificar a entrega integrada.** Executar instalação pelo lockfile, migrations isoladas, `pnpm verify`, `pnpm contracts:check`, `pnpm test:e2e`, `pnpm test:smoke`, peers e audit. Inspecionar cookie/origem, sessão, credenciais de fixture e vazamentos; usar dados fictícios isolados. E-mail real não é critério E2 porque o envio foi explicitamente adiado. Preencher comandos, contagens, exit codes, ambiente e limitações no relatório E2 somente depois de executar.
+- [x] **Passo 7 — Revisar e integrar.** Conferir diff e ausência de segredos; atualizar README, ADR 0002, matriz e relatório. Fazer commits revisados apenas pelo responsável pela integração, com autoria exclusiva do usuário e sem coautoria. Não iniciar E3, contratar serviços ou publicar por consequência deste passo.
 
-**Conclusão:** o responsável autorizado recebe e usa um link para obter sessão administrativa; conhecer ou digitar seu e-mail não concede privilégios. Existe um guard e contexto de acesso reutilizáveis pelas próximas entregas.
+**Conclusão exigida:** o administrador provisionado autentica com senha, recebe sessão protegida, consulta a área administrativa e encerra/invalida o acesso conforme os critérios. Não há cadastro público, recuperação automática, envio Resend ou links administrativos. Verificações registradas: 77 unitários, 19 integrações PostgreSQL, três jornadas de navegador, builds, contratos e smoke; revisão independente concluída. Sem publicação ou execução remota da CI.
 
 ### Task 3: E3 — Cadastro transacional com nota inicial e link pessoal
 

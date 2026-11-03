@@ -2,11 +2,11 @@
 
 Data original: 02/11/2026. Revisão de escopo: 03/11/2026.
 
-Estado: decisão aceita e acesso administrativo implementado/verificado localmente em E2. Os links dos jogadores pertencem às futuras E3/E4. Evidências e limites no [relatório E2](../entregas/E2-acesso-administrativo.md).
+Estado: acesso administrativo implementado em E2; geração da credencial de jogador implementada em E3. Resgate e revogação pertencem à futura E4. Evidências nos relatórios [E2](../entregas/E2-acesso-administrativo.md) e [E3](../entregas/E3-cadastro-jogadores.md).
 
 ## Contexto e revisão aprovada
 
-A decisão original previa login administrativo por link temporário enviado ao e-mail autorizado. Em 03/11/2026, o usuário adiou o envio por Resend e autorizou provisionar manualmente um único administrador com e-mail e senha. Esta revisão substitui o login por link apenas para o administrador nesta etapa. Jogadores continuam sem e-mail, usuário ou senha no MVP e receberão links pessoais nas entregas E3/E4.
+A decisão original previa login administrativo por link temporário enviado ao e-mail autorizado. Em 03/11/2026, o usuário adiou o envio por Resend e autorizou provisionar manualmente um único administrador com e-mail e senha. Esta revisão substitui o login por link apenas para o administrador nesta etapa. Jogadores continuam sem e-mail, usuário ou senha no MVP; E3 gera os links e o acesso será implementado na E4.
 
 ## Identidade e autorização
 
@@ -37,9 +37,11 @@ O rate limit usa contadores atômicos no PostgreSQL em janelas fixas de 15 minut
 
 ## Links de jogadores — decisão preservada para E3/E4
 
-Cada cadastro gerará um segredo pessoal reutilizável até revogação, mostrado ao administrador na criação ou rotação para envio individual. O segredo não será o ID do perfil. O jogador não precisará de e-mail ou senha e receberá apenas o papel de jogador.
+Em E3, cada cadastro gera um segredo pessoal aleatório de 32 bytes. Somente seu hash SHA-256 é persistido em PlayerAccessCredential; a URL usa fragmento em `/acesso/jogador#token=...` e só é devolvida na resposta201. A listagem omite segredo e hash. A interface mantém a confirmação em memória e a limpa ao iniciar outro cadastro, recarregar ou sair; o cache de consultas contém apenas os resumos de jogadores.
 
-O administrador poderá revogar a credencial e as sessões derivadas e gerar outro link. O transporte deverá retirar o segredo da URL após o resgate e impedir sua inclusão em logs, caches públicos e referências de terceiros. Essas funcionalidades ainda não estão concluídas em E2.
+O link será reutilizável até revogação, sem e-mail ou senha do jogador, e abrirá somente sessão PLAYER em E4. O segredo não é o ID do perfil.
+
+O administrador poderá revogar a credencial e as sessões derivadas e gerar outro link. O transporte deverá retirar o segredo da URL após o resgate e impedir sua inclusão em logs, caches públicos e referências de terceiros. Resgate, sessão de jogador e revogação ainda não estão implementados na E3.
 
 ## Resend adiado e consequências
 

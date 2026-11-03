@@ -83,3 +83,17 @@ O workflow Ubuntu 24.04 agora usa o mecanismo oficial `pnpm --filter @futeio/web
 Limitação: não houve execução do GitHub Actions/Linux nesta correção. O teste com CI=true no Windows não comprova AppArmor ou as demais camadas de isolamento do Linux. Configuração e ausência das flags demonstram o lançamento verificado; não constituem auditoria completa da sandbox do sistema operacional.
 
 Fontes primárias: [canais e instalação Playwright](https://playwright.dev/docs/browsers#google-chrome--microsoft-edge), [chromiumSandbox](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-option-chromium-sandbox), [implementação da página de versão do Chromium](https://raw.githubusercontent.com/chromium/chromium/main/chrome/browser/ui/webui/version/version_ui.cc) e [restrições de user namespaces/AppArmor](https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md).
+
+## Validação remota posterior — GitHub/Ubuntu
+
+Em 03/11/2026, o responsável autorizou enviar o histórico revisado ao repositório remoto e validar a CI. O repositório estava vazio; `main` recebeu o commit `6213eb0` com o histórico E1/E2 e a correção de navegador. A E3 começou em branch separada.
+
+[Execução 41711754646](https://github.com/roginaldosemog/futeio/actions/runs/41711754646): **success**, runner com label `ubuntu-24.04`. Passaram instalação pelo lockfile, migrations nos bancos isolados PostgreSQL, lint, tipos, unitários, integração, builds, contratos, smoke, instalação do Chrome e três jornadas de navegador.
+
+O registro efetivo do navegador foi:
+
+```json
+{"executable":"/opt/google/chrome/chrome","version":"156.0.8078.79","channel":"chrome","chromiumSandbox":true,"sandboxDisablingFlags":[]}
+```
+
+Esta execução fecha a pendência Linux da correção do Playwright e substitui a limitação de ausência de CI remota registrada nas seções anteriores. A versão Linux observada difere da versão Windows; ambas são identificadas pelo processo executado. O workflow não desativou a sandbox nem usou fallback para Chromium empacotado. Isso não equivale a uma auditoria de todas as camadas de isolamento do sistema operacional.

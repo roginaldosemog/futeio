@@ -1,4 +1,4 @@
-# Matriz de compatibilidade — E1 e adições de E2
+# Matriz de compatibilidade — E1, E2 e E3
 
 Consulta: 02/11/2026. Esta matriz registra a seleção, os ajustes de compatibilidade e a homologação local da E1. As dependências diretas são fixadas e o lockfile registra a árvore resolvida. Verificações de produção remota e uso pelo grupo não estão incluídas.
 
@@ -41,6 +41,14 @@ Atualização E2: 03/11/2026. O baseline Node **24.22.1** foi preservado. As nov
 Não há novo pacote de hashing: scrypt e HMAC usam `node:crypto` do runtime fixado. A consulta à documentação da linha Node 24 não autoriza atualização para outro patch. Resend está adiado; seu adaptador não está conectado ao módulo de acesso e E2 não depende de SDK ou chave do serviço.
 
 Os metadados primários foram consultados em `https://registry.npmjs.org/<pacote>/<versão>` para as versões acima. Peers satisfeitos e metadados compatíveis são pré-condições; não substituem testes e builds integrados.
+
+## Adição de E3
+
+`@tanstack/react-query` **5.105.3**, com `@tanstack/query-core` **5.105.3** no lockfile. A lista e o cadastro de jogadores são os primeiros consumidores: consulta, invalidação após criação e estados de carregamento/erro. A mutação não tem retry automático. O QueryClient pertence à página privada e é limpo ao desmontar; o link não entra no cache de consultas.
+
+A [documentação oficial](https://tanstack.com/query/latest/docs/framework/react/installation) declara suporte a React 18+; os metadados da versão no registro npm declaram React e tipos React `^18 || ^19`, atendidos pela baseline. A instalação preservou as versões existentes e acrescentou somente esses dois pacotes, fixados. As exclusões de idade adicionadas pelo pnpm referem-se somente a essas versões verificadas, como registrado no lockfile/configuração.
+
+O gerador de contratos usa `--default-non-nullable false`: propriedades de entrada opcionais continuam opcionais mesmo quando a API fornece um valor padrão. O DTO Swagger declara explicitamente o booleano de vínculo administrativo. Ver [opções oficiais do openapi-typescript](https://openapi-ts.dev/cli#flags).
 
 ## Decisões de compatibilidade
 

@@ -2,7 +2,9 @@
 
 Data: 02/11/2026.
 
-Estado: decisão aceita no planejamento; não implementada.
+Estado: contribuição inicial e unicidade implementadas em E3. Avaliações dos membros, reavaliação, visibilidade da tabela e cálculo consolidado permanecem planejados para E6.
+
+Em E3, o cadastro grava uma única Evaluation com o administrador autenticado como autor, inclusive no perfil vinculado a ele. A chave de grupo/alvo/avaliador impede duplicação. A nota exibida é essa contribuição inicial; não há endpoints de votação nem média/cortes implementados. Evidências no [relatório E3](../entregas/E3-cadastro-jogadores.md).
 
 ## Contexto e decisão
 

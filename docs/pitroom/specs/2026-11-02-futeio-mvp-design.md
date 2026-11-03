@@ -2,7 +2,7 @@
 
 Data: 02/11/2026, America/Sao_Paulo.
 
-Estado: escopo aprovado pelo responsável do produto. E1 foi implementada e verificada localmente. Em 03/11/2026, o usuário autorizou E2 e substituiu temporariamente o link de login administrativo por provisionamento manual de e-mail e senha; envio Resend fica adiado. E2 está em implementação/validação, com fechamento de verificações pendente. E3–E9 continuam planejadas e não são autorizadas por esta revisão. Resultados remotos e publicação exigem evidência própria.
+Estado: escopo aprovado pelo responsável do produto. E1–E3 foram implementadas e verificadas localmente e no GitHub/Ubuntu. Em 03/11/2026, o usuário autorizou E3 e a validação da CI. O administrador continua com e-mail e senha provisionados manualmente; envio Resend permanece adiado. E4–E9 continuam planejadas e fora desta autorização. Publicação e uso real exigem evidência própria.
 
 ## 1. Problema e público
 

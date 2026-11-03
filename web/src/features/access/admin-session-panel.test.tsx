@@ -10,6 +10,9 @@ describe("AdminSessionPanel", () => {
 
     expect(screen.getByText("admin@example.com")).toBeInTheDocument();
     await user.tab();
+    expect(screen.getByRole("link", { name: "Gerenciar jogadores" })).toHaveFocus();
+    expect(screen.getByRole("link", { name: "Gerenciar jogadores" })).toHaveAttribute("href", "/administracao/jogadores");
+    await user.tab();
     expect(screen.getByRole("button", { name: "Sair" })).toHaveFocus();
     await user.keyboard("{Enter}");
     expect(onLogout).toHaveBeenCalledTimes(1);

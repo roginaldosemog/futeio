@@ -102,6 +102,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/players": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlayersController_list"];
+        put?: never;
+        post: operations["PlayersController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -112,12 +128,36 @@ export interface components {
             /** Format: password */
             password: string;
         };
+        CreatePlayerDto: {
+            /** @example 7 */
+            initialRating: number;
+            /**
+             * @description Link this profile to the authenticated administrator identity.
+             * @default false
+             */
+            linkToCurrentAdministrator?: boolean;
+            /** @example Jogador de exemplo */
+            name: string;
+        };
+        CreatePlayerResponseDto: {
+            /** @description Personal access credential, returned only at creation. Never returned in listings. */
+            accessUrl: string;
+            player: components["schemas"]["PlayerSummaryDto"];
+        };
         CsrfResponseDto: {
             /** @description CSRF header value bound to the current HttpOnly browser cookie. */
             csrfToken: string;
         };
         MessageResponseDto: {
             message: string;
+        };
+        PlayerSummaryDto: {
+            /** Format: uuid */
+            id: string;
+            isOwnProfile: boolean;
+            name: string;
+            /** @description Initial contribution in E3; consolidated rating is introduced in E6. */
+            rating: number;
         };
         SessionResponseDto: {
             /** @description Only the authenticated administrator’s own email. */
@@ -299,6 +339,86 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlayersController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerSummaryDto"][];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlayersController_create: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-csrf-token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlayerDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatePlayerResponseDto"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

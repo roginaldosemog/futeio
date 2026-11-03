@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export interface AdminSessionPanelProps {
   email?: string;
   onLogout: () => void;
@@ -25,11 +27,9 @@ export function AdminSessionPanel({
           "Você entrou como administrador."
         )}
       </p>
-      <p className="mt-5 text-base leading-relaxed text-[#3c5b4b]">
-        O cadastro de jogadores será disponibilizado em uma próxima atualização.
-      </p>
+      <Link className="mt-6 inline-flex min-h-12 items-center rounded-xl bg-[#163b2a] px-5 py-3 font-semibold text-white transition-colors hover:bg-[#22533d] motion-reduce:transition-none" href="/administracao/jogadores">Gerenciar jogadores</Link>
       <button
-        className="mt-7 inline-flex min-h-12 items-center justify-center rounded-xl border border-[#6b8576] px-5 py-3 text-base font-semibold text-[#163b2a] transition-colors hover:bg-[#e7efea] disabled:cursor-wait disabled:bg-[#d6e2db] disabled:text-[#3c5b4b] motion-reduce:transition-none"
+        className="mt-5 flex min-h-12 items-center justify-center rounded-xl border border-[#6b8576] px-5 py-3 text-base font-semibold text-[#163b2a] transition-colors hover:bg-[#e7efea] disabled:cursor-wait disabled:bg-[#d6e2db] disabled:text-[#3c5b4b] motion-reduce:transition-none"
         type="button"
         disabled={pending}
         onClick={onLogout}

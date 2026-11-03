@@ -22,6 +22,48 @@
         ],
         "type": "object"
       },
+      "CreatePlayerDto": {
+        "properties": {
+          "initialRating": {
+            "example": 7,
+            "maximum": 10,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "linkToCurrentAdministrator": {
+            "default": false,
+            "description": "Link this profile to the authenticated administrator identity.",
+            "type": "boolean"
+          },
+          "name": {
+            "example": "Jogador de exemplo",
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "initialRating"
+        ],
+        "type": "object"
+      },
+      "CreatePlayerResponseDto": {
+        "properties": {
+          "accessUrl": {
+            "description": "Personal access credential, returned only at creation. Never returned in listings.",
+            "type": "string"
+          },
+          "player": {
+            "$ref": "#/components/schemas/PlayerSummaryDto"
+          }
+        },
+        "required": [
+          "player",
+          "accessUrl"
+        ],
+        "type": "object"
+      },
       "CsrfResponseDto": {
         "properties": {
           "csrfToken": {
@@ -42,6 +84,33 @@
         },
         "required": [
           "message"
+        ],
+        "type": "object"
+      },
+      "PlayerSummaryDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "isOwnProfile": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rating": {
+            "description": "Initial contribution in E3; consolidated rating is introduced in E6.",
+            "maximum": 10,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "rating",
+          "isOwnProfile"
         ],
         "type": "object"
       },
@@ -266,6 +335,96 @@
         },
         "tags": [
           "Health"
+        ]
+      }
+    },
+    "/api/v1/players": {
+      "get": {
+        "operationId": "PlayersController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlayerSummaryDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Players"
+        ]
+      },
+      "post": {
+        "operationId": "PlayersController_create",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-csrf-token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlayerDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePlayerResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "409": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Players"
         ]
       }
     }

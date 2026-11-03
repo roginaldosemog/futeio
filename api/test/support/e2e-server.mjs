@@ -9,13 +9,25 @@ const { requireTestDatabaseUrl } = require('../../scripts/test-database.cjs');
 let app;
 let prisma;
 let stopping = false;
+let ownsFixtureNamespace = false;
+const createdPlayerIds = new Set();
 
 async function stop(exitCode) {
   if (stopping) return;
   stopping = true;
   try {
-    // This identity belongs exclusively to this fixture, after the test-database guard.
-    if (prisma) await prisma.identity.deleteMany({ where: { email: TEST_ADMIN_EMAIL } });
+    // Only remove profiles created by this isolated server, never every member
+    // of the pilot group or players the administrator merely evaluated.
+    if (prisma && ownsFixtureNamespace) await prisma.$transaction(async (transaction) => {
+      const administrator = await transaction.identity.findUnique({ where: { email: TEST_ADMIN_EMAIL } });
+      const players = await transaction.player.findMany({
+        where: { id: { in: [...createdPlayerIds] } }, select: { id: true, identityId: true },
+      });
+      await transaction.player.deleteMany({ where: { id: { in: players.map((player) => player.id) } } });
+      const identities = players.map((player) => player.identityId).filter((id) => id !== administrator?.id);
+      await transaction.identity.deleteMany({ where: { id: { in: identities }, email: null } });
+      await transaction.identity.deleteMany({ where: { email: TEST_ADMIN_EMAIL } });
+    });
   } catch {
     process.stderr.write('The isolated E2E API could not finish its fixture cleanup.\n');
     exitCode = 1;
@@ -54,7 +66,22 @@ try {
     .compile();
   app = moduleRef.createNestApplication({ logger: false });
   configureApplication(app);
+  // Test-only response observation retains IDs for cleanup, never the access URL.
+  app.use((request, response, next) => {
+    if (request.method === 'POST' && request.path === '/api/v1/players') {
+      const json = response.json;
+      response.json = function (body) {
+        if (this.statusCode === 201 && typeof body?.player?.id === 'string') createdPlayerIds.add(body.player.id);
+        return json.call(this, body);
+      };
+    }
+    next();
+  });
   prisma = app.get(PrismaService);
+  if (await prisma.identity.findUnique({ where: { email: TEST_ADMIN_EMAIL }, select: { id: true } })) {
+    throw new Error('The reserved E2E identity already exists; preserve it for investigation.');
+  }
+  ownsFixtureNamespace = true;
   process.once('SIGINT', () => { void stop(0); });
   process.once('SIGTERM', () => { void stop(0); });
   process.on('message', (message) => {

@@ -5,9 +5,10 @@ export interface AccessFrameProps {
   title: string;
   description?: string;
   children: ReactNode;
+  wide?: boolean;
 }
 
-export function AccessFrame({ title, description, children }: AccessFrameProps) {
+export function AccessFrame({ title, description, children, wide = false }: AccessFrameProps) {
   return (
     <div className="flex min-h-svh flex-col">
       <a
@@ -31,7 +32,7 @@ export function AccessFrame({ title, description, children }: AccessFrameProps) 
         className="mx-auto w-full max-w-6xl flex-1 px-6 py-12 sm:px-10 sm:py-20"
         id="conteudo"
       >
-        <div className="mx-auto w-full max-w-lg">
+        <div className={`mx-auto w-full ${wide ? "max-w-4xl" : "max-w-lg"}`}>
           <h1 className="text-3xl leading-tight font-bold tracking-[-0.025em] text-balance sm:text-4xl">
             {title}
           </h1>

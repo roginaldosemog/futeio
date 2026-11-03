@@ -85,7 +85,8 @@ try {
   }
   runTool(
     resolve(dirname(packagePath), cliEntry),
-    [schemaOutput, '--output', typesOutput],
+    // An optional request property stays optional even when the server has a default.
+    [schemaOutput, '--output', typesOutput, '--default-non-nullable', 'false'],
     'Web API type generation',
   );
   writeFileSync(typesOutput, `${typeHeader}${readText(typesOutput)}`, 'utf8');

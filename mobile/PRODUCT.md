@@ -16,7 +16,7 @@ Reunir avaliações de habilidade para ajudar a organizar quatro times de cinco 
 
 ## Capabilities and Constraints
 
-O marco M1 compreende acesso administrativo por e-mail/senha, acesso do jogador pelo link pessoal já existente, sessão revogável, lista e leitura de perfis/avaliações. Escrita de avaliações, edição/fotos, administração e sorteios no app pertencem aos próximos marcos. A web já implementa esses fluxos.
+M1 compreende acesso administrativo por e-mail/senha, acesso do jogador pelo link pessoal já existente, sessão revogável, lista e leitura de perfis/avaliações. M2/M3 implementam envio/substituição de avaliações e autoavaliação, edição/fotos, administração de jogadores/links e sorteios com histórico. Os fluxos são implementados, mas execução nativa e publicação ainda não foram homologadas.
 
 Perfis e avaliações são privados aos membros. O administrador vê os autores; os jogadores identificam somente a própria contribuição. O aplicativo não recalcula notas nem sorteia times. A credencial pessoal não entra em parâmetros da navegação, logs ou cache de consultas.
 

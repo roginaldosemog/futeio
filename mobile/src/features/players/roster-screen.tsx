@@ -28,6 +28,8 @@ export function RosterScreen() {
       {logoutError ? <Message error>Não foi possível confirmar a saída. Tente novamente.</Message> : null}
       <Text accessibilityRole="header" style={[typography.title, { color: colors.foreground }]}>Jogadores</Text>
       <Message>Veja os perfis da sua turma. Puxe a lista para atualizar.</Message>
+      <Action secondary onPress={() => router.push('/sorteios')}>Ver sorteios</Action>
+      {auth.session?.role === 'ADMIN' ? <View style={{ gap: 12 }}><Action onPress={() => router.push('/administracao/jogadores')}>Cadastrar jogador</Action><Action secondary onPress={() => router.push('/administracao/sorteios')}>Montar os times</Action></View> : null}
       <Field label="Buscar jogador" value={search} onChangeText={setSearch} autoCorrect={false} returnKeyType="search" />
       {roster.isPending ? <Message>Carregando jogadores...</Message> : null}
       {roster.isError ? <><Message error>Não foi possível carregar a turma. Confira sua conexão e tente novamente.</Message><Action secondary onPress={() => { void roster.refetch(); }}>Tentar novamente</Action></> : null}

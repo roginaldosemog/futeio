@@ -121,3 +121,11 @@ Metro usa expo/metro-config com a detecção automática do workspace, sem alias
 Fontes: [release SDK58](https://expo.dev/changelog/sdk-58), [conjunto oficial de módulos SDK58](https://raw.githubusercontent.com/expo/expo/sdk-58/packages/expo/bundledNativeModules.json), [monorepos no Expo](https://docs.expo.dev/guides/monorepos/), [Expo Fetch](https://docs.expo.dev/versions/latest/sdk/expo/#expofetch-api), [SecureStore](https://docs.expo.dev/versions/latest/sdk/securestore/), [RNTL14](https://oss.callstack.com/react-native-testing-library/docs/start/quick-start), [Jest Expo](https://raw.githubusercontent.com/expo/expo/sdk-58/packages/jest-expo/package.json), [overrides no pnpm](https://pnpm.io/settings/dependency-resolution#overrides) e manifests exatos em https://registry.npmjs.org/NOME/VERSAO.
 
 A exportação Android/iOS produz bundles Hermes; não é uma compilação dos binários nativos nem demonstra instalação ou execução em Android/iPhone. A validação nativa é o primeiro passo da continuidade no Mac, descrito em [mobile/README.md](../mobile/README.md).
+
+## Mobile M2/M3 — fotos e peers
+
+ImagePicker **58.0.10**, ImageManipulator **58.0.16** e FileSystem **58.0.13** foram selecionados pelo conjunto oficial do SDK58 e conferidos na documentação/registro. O cliente usa a API contextual do manipulador, com decodificação limitada, JPEG/base64 e remoção somente do arquivo novo. **base64-js 1.5.1** é uma dependência direta pequena para converter a resposta JPEG privada em memória sem polyfill de Buffer.
+
+O override TypeScript@<6 de M1 foi removido: ele reescrevia os peers amplos ^5/6/7 de @expo/require-utils e >=5.8 de 2g para 5.9.3, entrando em conflito com o mobile 6.0.3. As versões diretas de cada pacote continuam fixadas e os peers estritos passaram, sem suppressões. Não houve atualização dos frameworks web/API.
+
+As novas funções de arquivo, seletor e Share exigem recompilar e homologar o aplicativo em ambiente nativo. Exportação de JavaScript e introspecção CNG não substituem essa validação. Fontes e limites estão no [relatório M2/M3](entregas/M2-M3-mobile.md).

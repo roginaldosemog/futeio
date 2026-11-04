@@ -12,5 +12,9 @@ export default function PrivateLayout() {
   return <Stack screenOptions={{ headerTintColor: colors.foreground, headerStyle: { backgroundColor: colors.background }, contentStyle: { backgroundColor: colors.background } }}>
     <Stack.Screen name="jogadores/index" options={{ title: 'Fute.io', headerLargeTitle: true }} />
     <Stack.Screen name="jogadores/[id]" options={{ title: 'Perfil do jogador', headerBackTitle: 'Jogadores' }} />
+    <Stack.Screen name="administracao/jogadores" options={{ title: 'Cadastrar jogador' }} />
+    <Stack.Screen name="administracao/sorteios" options={{ title: 'Montar os times' }} />
+    <Stack.Screen name="sorteios/index" options={{ title: 'Sorteios', headerLargeTitle: true }} />
+    <Stack.Screen name="sorteios/[id]" options={{ title: 'Times sorteados' }} />
   </Stack>;
 }

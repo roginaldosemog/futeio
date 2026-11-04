@@ -30,4 +30,12 @@ HTTPS é obrigatório fora de desenvolvimento local. O aplicativo em um celular 
 
 Testes de integração devem demonstrar isolamento entre transportes, expiração, revogação, limites compartilhados, privacidade e permissões. Testes em Node e exportação do bundle não comprovam funcionamento em Android ou iOS; registrar essa validação separadamente.
 
+## Retomada e modais nativos — M2/M3
+
+Um 401 oculta o conteúdo autenticado de forma síncrona, antes da remoção assíncrona no SecureStore. Revalidar a mesma credencial não cria uma nova época de autenticação no cliente: 401 dessa credencial continua válido. Apenas substituir a credencial torna respostas antigas irrelevantes.
+
+O seletor de fotos e a tela de compartilhamento podem disparar inactive/background/active. Uma cobertura oculta a interface, sem desmontar formulários nem limpar consultas ativas antes de confirmar a mesma sessão. A validação silenciosa mantém o rascunho; depois dela as leituras são invalidadas. Falha de acesso ou identidade diferente remove os dados privados. Não persistir consultas no disco nem enviar escritas pendentes após trocar de sessão.
+
+Resultados de picker após desmontagem são descartados. Operações confirmadas atualizam somente as consultas do grupo/identidade capturados, mesmo após Back; recibos e navegação exigem tela/identidade apropriadas. Sorteios iniciados por uma tela que perdeu foco não forçam navegação quando terminam. Não enfileirar mutações offline nem repeti-las automaticamente.
+
 Fontes: [autenticação no Expo Router](https://docs.expo.dev/router/advanced/authentication/), [SecureStore](https://docs.expo.dev/versions/latest/sdk/securestore/) e [rede no React Native](https://reactnative.dev/docs/network).

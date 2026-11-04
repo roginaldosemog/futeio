@@ -11,6 +11,7 @@ import { getApiConfigurationError } from '../src/lib/config';
 jest.mock('../src/providers/auth-provider', () => ({ useAuth: jest.fn() }));
 jest.mock('../src/lib/api', () => ({ apiRequest: jest.fn() }));
 jest.mock('../src/lib/config', () => ({ getApiConfigurationError: jest.fn(() => null) }));
+jest.mock('../src/features/players/photo-selection', () => ({ selectProfilePhoto: jest.fn() }));
 jest.mock('expo-router', () => ({ Redirect: () => null, useRouter: () => ({ push: jest.fn() }) }));
 jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: jest.requireActual<typeof import('react-native')>('react-native').View, useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }) }));
 

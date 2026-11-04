@@ -1,6 +1,6 @@
-# Fute.io — Mobile M1
+# Fute.io — Mobile
 
-Primeiro marco do aplicativo React Native com Expo, Expo Router, TypeScript e TanStack Query. Android e iPhone são os alvos; tablets e publicação nas lojas ficam fora deste marco. A API Nest continua sendo a autoridade de acesso e negócio.
+Aplicativo React Native com Expo, Expo Router, TypeScript e TanStack Query. M1 introduziu acesso e consultas; M2/M3 acrescentaram avaliações, perfil/foto, administração e sorteios. Android e iPhone são os alvos; tablets e publicação nas lojas ficam fora desta entrega. A API Nest continua sendo a autoridade de acesso e negócio. Execução nativa em aparelhos ainda precisa ser homologada.
 
 ## Implementado
 
@@ -9,10 +9,23 @@ Primeiro marco do aplicativo React Native com Expo, Expo Router, TypeScript e Ta
 - Sessão opaca e revogável no SecureStore, vinculada ao aparelho, verificada na API ao abrir/retomar o app.
 - Lista com busca, atualização por gesto e indicação de avaliação pendente/nota dada.
 - Consulta de perfil e avaliações, preservando a projeção anônima da API.
+- Avaliação e autoavaliação com nota inteira de 0 a 10; nova contribuição substitui a anterior no servidor.
+- Edição de nome e seleção/remoção de foto para o próprio jogador ou administrador, conforme permissão da API.
+- Cadastro administrativo com nota inicial obrigatória e vínculo único ao próprio perfil.
+- Compartilhamento explícito de links e confirmação para rotação/revogação; segredos são ocultados ao sair da tela ou deixar o app.
+- Seleção administrativa de vinte jogadores de linha, quatro times, histórico e consulta dos snapshots do servidor.
 - Navegação por Stack, tratamento de teclado, áreas seguras, controles de pelo menos 48 pontos e temas claro/escuro.
 - Contratos de API compartilhados por `@futeio/contracts`, sem importar banco ou regras de negócio.
 
-Não há criação pública de administrador nem dados de demonstração automáticos. Fotos, edição, envio de avaliações, gestão de jogadores/links e sorteios no app são próximos marcos. Esses recursos já existem na web.
+Não há criação pública de administrador nem dados de demonstração automáticos. Não há cálculo de médias ou sorteio implementado no cliente. Os relatórios [M1](../docs/entregas/M1-mobile.md) e [M2/M3](../docs/entregas/M2-M3-mobile.md) separam código implementado, verificações e limites.
+
+## Fotos, retomada e resultados incertos
+
+O app usa o seletor de imagens do sistema, sem câmera/microfone ou pedido de acesso amplo à biblioteca. A foto é decodificada com limites de dimensão e enviada como JPEG. O arquivo novo gerado pelo manipulador é removido; o arquivo original selecionado nunca é apagado. O seletor do sistema pode produzir sua própria cópia no cache privado, inclusive com metadados originais. Isso é diferente da foto recebida pela API, normalizada pelo backend e carregada em memória sem entregar o bearer ao componente Image.
+
+Ao abrir seletor/compartilhamento ou sair do app, uma cobertura oculta a interface. Formulários e consultas ativas permanecem em memória até a validação da mesma sessão, preservando edições; logout, falha de acesso ou troca de identidade removem os dados privados. Não há persistência das consultas. Um 401 retira o conteúdo autenticado antes de aguardar a limpeza do SecureStore.
+
+Escritas não ficam enfileiradas offline e não são repetidas automaticamente. Um cadastro com resposta incerta exige atualizar/conferir a lista. Um sorteio incerto bloqueia nova submissão até sair para conferir o histórico. Sucesso de sorteio bloqueia repetição e permite abrir o resultado. O bloqueio de incerteza é local à tela/sessão montada, sem garantia de idempotência entre reinicializações; confira o histórico após interrupções.
 
 ## Retomar no Mac
 
@@ -52,7 +65,7 @@ pnpm dev
 pnpm dev:mobile
 ```
 
-Para compilar e executar nativamente a partir do Mac:
+Depois de instalar os novos módulos de foto, recompile o aplicativo nativo. Para compilar e executar a partir do Mac:
 
 ```sh
 pnpm --filter @futeio/mobile run ios
@@ -76,11 +89,11 @@ pnpm contracts:check
 
 `build` exporta os bundles JavaScript de Android e iOS. Não compila binários nem prova execução nos sistemas. Lint, tipos e testes usam os scripts do monorepo/CI. A API deve ser compilada antes de gerar/verificar os contratos, conforme README da raiz.
 
-## Próximos marcos
+## Homologação nativa e próximos marcos
 
-1. Executar M1 no iOS Simulator e Android, validar login/link/revogação/retomada e registrar capturas nativas, tema escuro e texto ampliado.
-2. Enviar e substituir avaliações, autoavaliar, editar nome e gerenciar foto, com testes de permissões e sessão.
-3. Gestão administrativa de jogadores/links, seleção de vinte jogadores, sorteios e histórico, preservando snapshots e sem repetir mutações incertas.
-4. Links abrindo diretamente o app, builds para distribuição e publicação, após definir domínio e assinatura. No M1, o link deve ser colado na tela de entrada; o scheme configurado não implementa universal/app links.
+1. Executar em iOS e Android, usando dados sintéticos: login/link/revogação, autoavaliação, edição/foto, compartilhamento e sorteio de vinte jogadores. Registrar capturas nativas, tema escuro e texto ampliado.
+2. Validar retorno de seletor/Share sem perder rascunhos, revogação durante modal, HTTP 401 com armazenamento lento, Back com POST pendente e retorno após resposta incerta. No Android, incluir destruição da Activity enquanto o seletor estiver aberto; resultados órfãos devem ser descartados, sem upload para uma sessão nova.
+3. Definir domínio e assinatura para universal/app links, distribuição e publicação. Atualmente o link é colado na entrada; o scheme configurado não implementa esses mecanismos.
+4. Coletar feedback da pelada real e medir uso/impacto depois da publicação.
 
 Não alterar as regras de negócio para reproduzi-las no aplicativo. Não registrar tokens, fotos, e-mail ou notas em telemetria. No logout, dados de consultas e credencial local são removidos; se o servidor estiver inacessível, o app informa que não confirmou a revogação remota, e o prazo absoluto da sessão continua valendo.

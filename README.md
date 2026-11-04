@@ -4,7 +4,7 @@ Produto para ajudar uma pelada amadora a definir notas de habilidade e formar ti
 
 ## Estado do projeto
 
-O MVP web está implementado e verificado localmente: acesso administrativo, cadastro, links revogáveis dos jogadores, edição de nome/foto, avaliações privadas e sorteio de quatro times com histórico. A branch `codex/mobile-app` acrescenta o primeiro marco nativo: fundação Expo, acesso seguro, lista e consulta de perfis/avaliações. Veja as instruções e os limites em [mobile/README.md](mobile/README.md). Resend continua adiado. Publicação e uso pela pelada real ainda não aconteceram.
+O MVP web está implementado e verificado localmente: acesso administrativo, cadastro, links revogáveis dos jogadores, edição de nome/foto, avaliações privadas e sorteio de quatro times com histórico. A branch `codex/mobile-app` acrescenta os fluxos mobile com Expo: acesso, perfis/fotos, avaliações, administração e sorteios. Veja as instruções e os limites em [mobile/README.md](mobile/README.md). A homologação em Android/iPhone ainda está pendente. Resend continua adiado. Publicação e uso pela pelada real ainda não aconteceram.
 
 | Categoria | Estado |
 | --- | --- |
@@ -16,6 +16,7 @@ O MVP web está implementado e verificado localmente: acesso administrativo, cad
 | Qualidade de E3 | Lint, tipos, 94 testes unitários, 36 de integração, 6 de navegador, builds, contratos e smoke passaram |
 | Qualidade de E4–E7 (web) | 148 unitários, 70 de integração e 8 de navegador; verificações registradas no relatório da entrega |
 | Mobile M1 | Acesso, lista e consulta de perfis/avaliações; [escopo e verificações](docs/entregas/M1-mobile.md) |
+| Mobile M2/M3 | Avaliações, perfil/foto, administração e sorteios; [escopo e verificações](docs/entregas/M2-M3-mobile.md) |
 | CI | Workflow Ubuntu com PostgreSQL e Chrome instalado; [resultado por commit da branch mobile](https://github.com/roginaldosemog/futeio/actions?query=branch%3Acodex%2Fmobile-app) |
 | Publicação e uso real | Ainda não realizados |
 | Métricas de uso e impacto | Ainda não coletadas |
@@ -34,6 +35,7 @@ O MVP web está implementado e verificado localmente: acesso administrativo, cad
 - [Pesquisa de domínio e publicação econômica para até vinte usuários](docs/pesquisas/2026-11-04-dominio-e-publicacao.md).
 - [Mobile M1: executar, verificar e continuar no Mac](mobile/README.md).
 - [M1: evidências e limites do primeiro marco mobile](docs/entregas/M1-mobile.md).
+- [M2/M3: fluxos do MVP no mobile e homologação pendente](docs/entregas/M2-M3-mobile.md).
 - [ADR 0001 — Monorepo e monolito modular](docs/adr/0001-monorepo-e-monolito-modular.md).
 - [ADR 0002 — Identidade, acesso administrativo e links de jogadores](docs/adr/0002-identidade-e-acesso-por-links.md).
 - [ADR 0003 — Avaliações e nota consolidada](docs/adr/0003-avaliacoes-e-nota-consolidada.md).

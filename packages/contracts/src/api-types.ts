@@ -70,6 +70,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/native/admin/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NativeAccessController_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/native/player/redeem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["NativeAccessController_redeem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/player/redeem": {
         parameters: {
             query?: never;
@@ -332,6 +364,11 @@ export interface components {
         MessageResponseDto: {
             message: string;
         };
+        NativeSessionResponseDto: {
+            session: components["schemas"]["SessionResponseDto"];
+            /** @description Opaque native session credential returned only at authentication. Store in native secure storage; never log or cache. */
+            readonly token: string;
+        };
         PlayerAccessLinkDto: {
             /** @description Personal access credential returned once; previous links and sessions are revoked. */
             accessUrl: string;
@@ -473,8 +510,9 @@ export interface operations {
     AccessController_logout: {
         parameters: {
             query?: never;
-            header: {
-                "x-csrf-token": string;
+            header?: {
+                /** @description Required with browser cookies; native bearer authentication does not use ambient cookies. */
+                "x-csrf-token"?: string;
             };
             path?: never;
             cookie?: never;
@@ -528,11 +566,106 @@ export interface operations {
             };
         };
     };
+    NativeAccessController_login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminPasswordLoginDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeSessionResponseDto"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NativeAccessController_redeem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RedeemPlayerLinkDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeSessionResponseDto"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     PlayerAccessController_redeem: {
         parameters: {
             query?: never;
-            header: {
-                "x-csrf-token": string;
+            header?: {
+                /** @description Required with browser cookies; native bearer authentication does not use ambient cookies. */
+                "x-csrf-token"?: string;
             };
             path?: never;
             cookie?: never;
@@ -611,8 +744,9 @@ export interface operations {
     DrawsController_create: {
         parameters: {
             query?: never;
-            header: {
-                "x-csrf-token": string;
+            header?: {
+                /** @description Required with browser cookies; native bearer authentication does not use ambient cookies. */
+                "x-csrf-token"?: string;
             };
             path?: never;
             cookie?: never;
@@ -764,8 +898,9 @@ export interface operations {
     PlayersController_create: {
         parameters: {
             query?: never;
-            header: {
-                "x-csrf-token": string;
+            header?: {
+                /** @description Required with browser cookies; native bearer authentication does not use ambient cookies. */
+                "x-csrf-token"?: string;
             };
             path?: never;
             cookie?: never;
@@ -852,8 +987,9 @@ export interface operations {
     PlayerAccessController_revoke: {
         parameters: {
             query?: never;
-            header: {
-                "x-csrf-token": string;
+            header?: {
+                /** @description Required with browser cookies; native bearer authentication does not use ambient cookies. */
+                "x-csrf-token"?: string;
             };
             path: {
                 id: string;
@@ -899,8 +1035,9 @@ export interface operations {
     PlayerAccessController_rotate: {
         parameters: {
             query?: never;
-            header: {
-                "x-csrf-token": string;
+            header?: {
+                /** @description Required with browser cookies; native bearer authentication does not use ambient cookies. */
+                "x-csrf-token"?: string;
             };
             path: {
                 id: string;
@@ -985,8 +1122,9 @@ export interface operations {
     PlayerProfileController_upload: {
         parameters: {
             query?: never;
-            header: {
-                "x-csrf-token": string;
+            header?: {
+                /** @description Required with browser cookies; native bearer authentication does not use ambient cookies. */
+                "x-csrf-token"?: string;
             };
             path: {
                 id: string;
@@ -1042,8 +1180,9 @@ export interface operations {
     PlayerProfileController_removePhoto: {
         parameters: {
             query?: never;
-            header: {
-                "x-csrf-token": string;
+            header?: {
+                /** @description Required with browser cookies; native bearer authentication does not use ambient cookies. */
+                "x-csrf-token"?: string;
             };
             path: {
                 id: string;
@@ -1083,8 +1222,9 @@ export interface operations {
     PlayerProfileController_rename: {
         parameters: {
             query?: never;
-            header: {
-                "x-csrf-token": string;
+            header?: {
+                /** @description Required with browser cookies; native bearer authentication does not use ambient cookies. */
+                "x-csrf-token"?: string;
             };
             path: {
                 id: string;
@@ -1173,8 +1313,9 @@ export interface operations {
     EvaluationsController_evaluate: {
         parameters: {
             query?: never;
-            header: {
-                "x-csrf-token": string;
+            header?: {
+                /** @description Required with browser cookies; native bearer authentication does not use ambient cookies. */
+                "x-csrf-token"?: string;
             };
             path: {
                 playerId: string;

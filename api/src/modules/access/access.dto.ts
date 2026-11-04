@@ -34,3 +34,10 @@ export class SessionResponseDto {
   @ApiPropertyOptional({ description: 'Only the authenticated administrator’s own email.' })
   email?: string;
 }
+
+export class NativeSessionResponseDto {
+  @ApiProperty({ type: SessionResponseDto })
+  session!: SessionResponseDto;
+  @ApiProperty({ minLength: 43, maxLength: 43, description: 'Opaque native session credential returned only at authentication. Store in native secure storage; never log or cache.', readOnly: true })
+  token!: string;
+}

@@ -1,6 +1,8 @@
 packages:
   - api
   - web
+  - mobile
+  - packages/*
 
 saveExact: true
 engineStrict: true
@@ -15,7 +17,7 @@ allowBuilds:
   unrs-resolver: true
 
 overrides:
-  typescript: 5.9.3
+  typescript@<6: 5.9.3
 
 minimumReleaseAgeExclude:
   - '@next/env@16.4.4'
@@ -33,3 +35,25 @@ minimumReleaseAgeExclude:
   - '@nestjs/swagger@12.1.0'
   - '@tanstack/query-core@5.105.3'
   - '@tanstack/react-query@5.105.3'
+  - '@expo/cli@58.1.19'
+  - '@expo/config-plugins@58.0.12'
+  - '@expo/config@58.0.11'
+  - '@expo/env@2.5.4'
+  - '@expo/fingerprint@0.21.9'
+  - '@expo/inline-modules@0.2.9'
+  - '@expo/local-build-cache-provider@58.0.11'
+  - '@expo/log-box@58.0.15'
+  - '@expo/metro-config@58.0.21'
+  - '@expo/metro-runtime@58.0.17'
+  - '@expo/prebuild-config@58.0.19'
+  - '@expo/router-server@58.0.21'
+  - babel-preset-expo@58.0.24
+  - expo-asset@58.0.20
+  - expo-constants@58.0.15
+  - expo-linking@58.0.16
+  - expo-modules-autolinking@58.0.17
+  - expo-modules-core@58.0.30
+  - expo-modules-jsi@58.0.22
+  - expo-router@58.0.30
+  - expo@58.0.23
+  - jest-expo@58.0.14

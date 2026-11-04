@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpException, Param, ParseUUIDPipe, Post, Req, Res, UseGuards } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiCookieAuth, ApiForbiddenResponse, ApiHeader, ApiNotFoundResponse, ApiOkResponse, ApiProduces, ApiTags, ApiTooManyRequestsResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiCookieAuth, ApiForbiddenResponse, ApiHeader, ApiNotFoundResponse, ApiOkResponse, ApiProduces, ApiTags, ApiTooManyRequestsResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import type { Response } from 'express';
 import type { AccessRequest } from '../access/access-context';
 import { MemberGuard } from '../access/member.guard';
@@ -10,6 +10,7 @@ import { PlayerProfileDto, UpdatePlayerProfileDto, UploadPlayerPhotoDto } from '
 
 @ApiTags('Players')
 @ApiCookieAuth('session')
+@ApiBearerAuth('nativeSession')
 @ApiUnauthorizedResponse()
 @ApiForbiddenResponse()
 @ApiNotFoundResponse()
@@ -27,7 +28,7 @@ export class PlayerProfileController {
   @Post(':id/profile')
   @HttpCode(200)
   @UseGuards(CsrfGuard)
-  @ApiHeader({ name: 'x-csrf-token', required: true })
+  @ApiHeader({ name: 'x-csrf-token', required: false, description: 'Required with browser cookies; native bearer authentication does not use ambient cookies.' })
   @ApiOkResponse({ type: PlayerProfileDto })
   @ApiBadRequestResponse()
   rename(@Param('id', ParseUUIDPipe) id: string, @Body() input: UpdatePlayerProfileDto, @Req() request: AccessRequest): Promise<PlayerProfileDto> {
@@ -37,7 +38,7 @@ export class PlayerProfileController {
   @Post(':id/photo')
   @HttpCode(200)
   @UseGuards(CsrfGuard)
-  @ApiHeader({ name: 'x-csrf-token', required: true })
+  @ApiHeader({ name: 'x-csrf-token', required: false, description: 'Required with browser cookies; native bearer authentication does not use ambient cookies.' })
   @ApiOkResponse({ type: PlayerProfileDto })
   @ApiBadRequestResponse()
   @ApiTooManyRequestsResponse()
@@ -51,7 +52,7 @@ export class PlayerProfileController {
 
   @Delete(':id/photo')
   @UseGuards(CsrfGuard)
-  @ApiHeader({ name: 'x-csrf-token', required: true })
+  @ApiHeader({ name: 'x-csrf-token', required: false, description: 'Required with browser cookies; native bearer authentication does not use ambient cookies.' })
   @ApiOkResponse({ type: PlayerProfileDto })
   removePhoto(@Param('id', ParseUUIDPipe) id: string, @Req() request: AccessRequest): Promise<PlayerProfileDto> {
     return this.profiles.removePhoto(id, request.accessContext!);

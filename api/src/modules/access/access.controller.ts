@@ -1,6 +1,6 @@
 import { Body, Controller, ForbiddenException, Get, HttpCode, HttpException, Inject, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
-import { ApiBadRequestResponse, ApiCookieAuth, ApiForbiddenResponse, ApiHeader, ApiOkResponse, ApiTags, ApiTooManyRequestsResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiCookieAuth, ApiForbiddenResponse, ApiHeader, ApiOkResponse, ApiTags, ApiTooManyRequestsResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { AUTH_CONFIGURATION, type AuthConfiguration } from './auth-configuration';
 import { csrfFor } from './auth-secrets';
 import { SessionService } from './session.service';
@@ -19,6 +19,7 @@ export class AccessController {
   @ApiOkResponse({ type: CsrfResponseDto })
   @ApiTooManyRequestsResponse()
   async csrf(@Req() request: AccessRequest, @Res({ passthrough: true }) response: Response): Promise<CsrfResponseDto> {
+    if (request.headers.authorization !== undefined) throw new ForbiddenException();
     if (request.get('sec-fetch-site') === 'cross-site') throw new ForbiddenException();
     let browser: BrowserContext | undefined;
     try { browser = await this.sessions.requireBrowser(request); }
@@ -58,6 +59,7 @@ export class AccessController {
 
   @Get('me')
   @ApiCookieAuth('session')
+  @ApiBearerAuth('nativeSession')
   @ApiOkResponse({ type: SessionResponseDto })
   @ApiUnauthorizedResponse()
   async me(@Req() request: AccessRequest): Promise<SessionResponseDto> {
@@ -68,7 +70,8 @@ export class AccessController {
   @HttpCode(200)
   @UseGuards(CsrfGuard)
   @ApiCookieAuth('session')
-  @ApiHeader({ name: 'x-csrf-token', required: true })
+  @ApiBearerAuth('nativeSession')
+  @ApiHeader({ name: 'x-csrf-token', required: false, description: 'Required with browser cookies; native bearer authentication does not use ambient cookies.' })
   @ApiOkResponse({ type: MessageResponseDto })
   @ApiUnauthorizedResponse()
   @ApiForbiddenResponse()

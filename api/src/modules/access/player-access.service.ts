@@ -7,13 +7,24 @@ import { newSecret, secretHash } from './auth-secrets';
 import { SessionService } from './session.service';
 import { SESSION_INCLUDE, type AccessContext, type BrowserContext } from './access-context';
 import { PlayerCredentialService } from './player-credential.service';
-import type { SessionResponseDto } from './access.dto';
+import type { NativeSessionResponseDto, SessionResponseDto } from './access.dto';
 
 @Injectable()
 export class PlayerAccessService {
   constructor(private readonly prisma: PrismaService, private readonly sessions: SessionService, private readonly credentials: PlayerCredentialService, @Inject(AUTH_CLOCK) private readonly clock: Clock) {}
 
   async redeem(secret: string, browser: BrowserContext, response: Response): Promise<SessionResponseDto> {
+    const context = await this.createSession(secret, browser);
+    this.sessions.setCookie(response, context.token, context.session);
+    return this.sessions.view(context);
+  }
+
+  async redeemNative(secret: string): Promise<NativeSessionResponseDto> {
+    const context = await this.createSession(secret);
+    return { session: this.sessions.view(context), token: context.token };
+  }
+
+  private async createSession(secret: string, browser?: BrowserContext): Promise<BrowserContext> {
     const now = this.clock.now();
     const token = newSecret();
     const tokenHash = secretHash(secret);
@@ -23,16 +34,17 @@ export class PlayerAccessService {
       await transaction.$queryRaw`SELECT p.id FROM players p JOIN player_access_credentials c ON c.player_id = p.id AND c.group_id = p.group_id WHERE c.token_hash = ${tokenHash} AND p.group_id = ${PILOT_GROUP_ID}::uuid FOR UPDATE OF p`;
       const credential = await transaction.playerAccessCredential.findUnique({ where: { tokenHash }, include: { player: true } });
       if (!credential || credential.revokedAt || credential.groupId !== PILOT_GROUP_ID) throw new UnauthorizedException();
-      const revoked = await transaction.accessSession.updateMany({ where: { id: browser.session.id, revokedAt: null, expiresAt: { gt: now } }, data: { revokedAt: now } });
-      if (revoked.count !== 1) throw new UnauthorizedException();
+      if (browser) {
+        const revoked = await transaction.accessSession.updateMany({ where: { id: browser.session.id, revokedAt: null, expiresAt: { gt: now } }, data: { revokedAt: now } });
+        if (revoked.count !== 1) throw new UnauthorizedException();
+      }
       return transaction.accessSession.create({ data: {
         tokenHash: secretHash(token), role: 'PLAYER', groupId: credential.groupId,
         identityId: credential.player.identityId, playerCredentialId: credential.id,
         expiresAt: new Date(now.getTime() + PLAYER_SESSION_TTL_MS), createdAt: now,
       }, include: SESSION_INCLUDE });
     });
-    this.sessions.setCookie(response, token, created);
-    return this.sessions.view({ token, session: created });
+    return { token, session: created };
   }
 
   async changeLink(playerId: string, access: AccessContext, rotate: boolean): Promise<string | undefined> {

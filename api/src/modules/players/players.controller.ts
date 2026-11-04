@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiConflictResponse, ApiCookieAuth, ApiCreatedResponse, ApiForbiddenResponse, ApiHeader, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiConflictResponse, ApiCookieAuth, ApiCreatedResponse, ApiForbiddenResponse, ApiHeader, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import type { AccessRequest } from '../access/access-context';
 import { AdminGuard } from '../access/admin.guard';
 import { CsrfGuard } from '../access/csrf.guard';
@@ -9,6 +9,7 @@ import { CreatePlayerDto, CreatePlayerResponseDto, PlayerSummaryDto } from './pl
 
 @ApiTags('Players')
 @ApiCookieAuth('session')
+@ApiBearerAuth('nativeSession')
 @ApiUnauthorizedResponse()
 @ApiForbiddenResponse()
 @Controller('players')
@@ -18,7 +19,7 @@ export class PlayersController {
 
   @Post()
   @UseGuards(AdminGuard, CsrfGuard)
-  @ApiHeader({ name: 'x-csrf-token', required: true })
+  @ApiHeader({ name: 'x-csrf-token', required: false, description: 'Required with browser cookies; native bearer authentication does not use ambient cookies.' })
   @ApiCreatedResponse({ type: CreatePlayerResponseDto })
   @ApiBadRequestResponse()
   @ApiConflictResponse()

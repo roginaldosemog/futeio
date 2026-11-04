@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url));
 const temporaryRoot = realpathSync(tmpdir());
 const schemaTarget = join(repositoryRoot, 'api', 'openapi.json');
-const typesTarget = join(repositoryRoot, 'web', 'src', 'generated', 'api-types.ts');
+const typesTarget = join(repositoryRoot, 'packages', 'contracts', 'src', 'api-types.ts');
 const typeHeader = '// Generated from api/openapi.json by pnpm contracts:generate. Do not edit.\n\n';
 const runtimeKeys = new Set([
   'PATH', 'PATHEXT', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP',
@@ -87,7 +87,7 @@ try {
     resolve(dirname(packagePath), cliEntry),
     // An optional request property stays optional even when the server has a default.
     [schemaOutput, '--output', typesOutput, '--default-non-nullable', 'false'],
-    'Web API type generation',
+    'Shared API type generation',
   );
   writeFileSync(typesOutput, `${typeHeader}${readText(typesOutput)}`, 'utf8');
 
@@ -99,13 +99,13 @@ try {
     if (changed) {
       throw new ContractError('Contract artifacts are missing or outdated. Run pnpm contracts:generate and review both generated files.');
     }
-    console.log('The API schema and web API types match their generated contracts.');
+    console.log('The API schema and shared API types match their generated contracts.');
   } else {
     for (const [generated, tracked] of artifacts) {
       mkdirSync(dirname(tracked), { recursive: true });
       writeFileSync(tracked, readText(generated), 'utf8');
     }
-    console.log('Generated api/openapi.json and web/src/generated/api-types.ts.');
+    console.log('Generated api/openapi.json and packages/contracts/src/api-types.ts.');
   }
 } catch (error) {
   console.error(error instanceof ContractError

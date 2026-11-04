@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, HttpCode, Param, ParseUUIDPipe, Post, Req, Res, UseGuards } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiCookieAuth, ApiForbiddenResponse, ApiHeader, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiTooManyRequestsResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiCookieAuth, ApiForbiddenResponse, ApiHeader, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiTooManyRequestsResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import type { Response } from 'express';
 import type { AccessRequest } from './access-context';
 import { AdminGuard } from './admin.guard';
@@ -11,10 +11,11 @@ import { MessageResponseDto, SessionResponseDto } from './access.dto';
 
 @ApiTags('Access')
 @ApiCookieAuth('session')
+@ApiBearerAuth('nativeSession')
 @ApiUnauthorizedResponse()
 @ApiForbiddenResponse()
 @ApiBadRequestResponse()
-@ApiHeader({ name: 'x-csrf-token', required: true })
+@ApiHeader({ name: 'x-csrf-token', required: false, description: 'Required with browser cookies; native bearer authentication does not use ambient cookies.' })
 @Controller()
 export class PlayerAccessController {
   constructor(private readonly access: PlayerAccessService, private readonly limiter: AuthRateLimiter) {}

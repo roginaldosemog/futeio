@@ -16,7 +16,7 @@ jobs:
   foundation:
     name: Lint, types, tests and production builds
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       CI: 'true'
       NEXT_TELEMETRY_DISABLED: '1'
@@ -59,6 +59,8 @@ jobs:
         run: node scripts/ci-auth-env.mjs
       - name: Generate Prisma client
         run: pnpm db:generate
+      - name: Verify Expo SDK dependency compatibility
+        run: pnpm --filter @futeio/mobile run check:expo
       - name: Prepare isolated application and test databases
         run: |
           psql -h 127.0.0.1 -p 5433 -U futeio_test -d futeio_test -c 'CREATE DATABASE futeio;'

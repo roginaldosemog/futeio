@@ -238,6 +238,25 @@
         ],
         "type": "object"
       },
+      "NativeSessionResponseDto": {
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/SessionResponseDto"
+          },
+          "token": {
+            "description": "Opaque native session credential returned only at authentication. Store in native secure storage; never log or cache.",
+            "maxLength": 43,
+            "minLength": 43,
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "session",
+          "token"
+        ],
+        "type": "object"
+      },
       "PlayerAccessLinkDto": {
         "properties": {
           "accessUrl": {
@@ -436,6 +455,11 @@
       }
     },
     "securitySchemes": {
+      "nativeSession": {
+        "bearerFormat": "opaque",
+        "scheme": "bearer",
+        "type": "http"
+      },
       "session": {
         "in": "cookie",
         "name": "futeio_session",
@@ -445,7 +469,7 @@
   },
   "info": {
     "contact": {},
-    "description": "Private football group: player access, profiles, current evaluations and recorded team draws.",
+    "description": "Private football group: player access, profiles, current evaluations and recorded team draws. Browser cookies require exact Origin and CSRF for mutations. Native opaque bearer sessions use the same permissions and revocation. Never combine Cookie and Authorization.",
     "title": "Futeio API",
     "version": "0.1.0"
   },
@@ -532,9 +556,10 @@
         "operationId": "AccessController_logout",
         "parameters": [
           {
+            "description": "Required with browser cookies; native bearer authentication does not use ambient cookies.",
             "in": "header",
             "name": "x-csrf-token",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -559,6 +584,9 @@
           }
         },
         "security": [
+          {
+            "nativeSession": []
+          },
           {
             "session": []
           }
@@ -589,6 +617,9 @@
         },
         "security": [
           {
+            "nativeSession": []
+          },
+          {
             "session": []
           }
         ],
@@ -597,14 +628,101 @@
         ]
       }
     },
+    "/api/v1/auth/native/admin/login": {
+      "post": {
+        "operationId": "NativeAccessController_login",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminPasswordLoginDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeSessionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "429": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Native access"
+        ]
+      }
+    },
+    "/api/v1/auth/native/player/redeem": {
+      "post": {
+        "operationId": "NativeAccessController_redeem",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedeemPlayerLinkDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeSessionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "429": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Native access"
+        ]
+      }
+    },
     "/api/v1/auth/player/redeem": {
       "post": {
         "operationId": "PlayerAccessController_redeem",
         "parameters": [
           {
+            "description": "Required with browser cookies; native bearer authentication does not use ambient cookies.",
             "in": "header",
             "name": "x-csrf-token",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -646,6 +764,9 @@
         },
         "security": [
           {
+            "nativeSession": []
+          },
+          {
             "session": []
           }
         ],
@@ -681,6 +802,9 @@
         },
         "security": [
           {
+            "nativeSession": []
+          },
+          {
             "session": []
           }
         ],
@@ -692,9 +816,10 @@
         "operationId": "DrawsController_create",
         "parameters": [
           {
+            "description": "Required with browser cookies; native bearer authentication does not use ambient cookies.",
             "in": "header",
             "name": "x-csrf-token",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -735,6 +860,9 @@
           }
         },
         "security": [
+          {
+            "nativeSession": []
+          },
           {
             "session": []
           }
@@ -779,6 +907,9 @@
           }
         },
         "security": [
+          {
+            "nativeSession": []
+          },
           {
             "session": []
           }
@@ -843,6 +974,9 @@
         },
         "security": [
           {
+            "nativeSession": []
+          },
+          {
             "session": []
           }
         ],
@@ -854,9 +988,10 @@
         "operationId": "PlayersController_create",
         "parameters": [
           {
+            "description": "Required with browser cookies; native bearer authentication does not use ambient cookies.",
             "in": "header",
             "name": "x-csrf-token",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -897,6 +1032,9 @@
           }
         },
         "security": [
+          {
+            "nativeSession": []
+          },
           {
             "session": []
           }
@@ -942,6 +1080,9 @@
         },
         "security": [
           {
+            "nativeSession": []
+          },
+          {
             "session": []
           }
         ],
@@ -955,9 +1096,10 @@
         "operationId": "PlayerAccessController_revoke",
         "parameters": [
           {
+            "description": "Required with browser cookies; native bearer authentication does not use ambient cookies.",
             "in": "header",
             "name": "x-csrf-token",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -997,6 +1139,9 @@
         },
         "security": [
           {
+            "nativeSession": []
+          },
+          {
             "session": []
           }
         ],
@@ -1010,9 +1155,10 @@
         "operationId": "PlayerAccessController_rotate",
         "parameters": [
           {
+            "description": "Required with browser cookies; native bearer authentication does not use ambient cookies.",
             "in": "header",
             "name": "x-csrf-token",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1052,6 +1198,9 @@
         },
         "security": [
           {
+            "nativeSession": []
+          },
+          {
             "session": []
           }
         ],
@@ -1073,9 +1222,10 @@
             }
           },
           {
+            "description": "Required with browser cookies; native bearer authentication does not use ambient cookies.",
             "in": "header",
             "name": "x-csrf-token",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1103,6 +1253,9 @@
           }
         },
         "security": [
+          {
+            "nativeSession": []
+          },
           {
             "session": []
           }
@@ -1147,6 +1300,9 @@
         },
         "security": [
           {
+            "nativeSession": []
+          },
+          {
             "session": []
           }
         ],
@@ -1166,9 +1322,10 @@
             }
           },
           {
+            "description": "Required with browser cookies; native bearer authentication does not use ambient cookies.",
             "in": "header",
             "name": "x-csrf-token",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1213,6 +1370,9 @@
         },
         "security": [
           {
+            "nativeSession": []
+          },
+          {
             "session": []
           }
         ],
@@ -1234,9 +1394,10 @@
             }
           },
           {
+            "description": "Required with browser cookies; native bearer authentication does not use ambient cookies.",
             "in": "header",
             "name": "x-csrf-token",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1277,6 +1438,9 @@
           }
         },
         "security": [
+          {
+            "nativeSession": []
+          },
           {
             "session": []
           }
@@ -1322,6 +1486,9 @@
         },
         "security": [
           {
+            "nativeSession": []
+          },
+          {
             "session": []
           }
         ],
@@ -1341,9 +1508,10 @@
             }
           },
           {
+            "description": "Required with browser cookies; native bearer authentication does not use ambient cookies.",
             "in": "header",
             "name": "x-csrf-token",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1384,6 +1552,9 @@
           }
         },
         "security": [
+          {
+            "nativeSession": []
+          },
           {
             "session": []
           }

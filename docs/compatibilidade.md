@@ -1,4 +1,4 @@
-# Matriz de compatibilidade — MVP web
+# Matriz de compatibilidade — Web, API e mobile
 
 Consulta: 02/11/2026. Esta matriz registra a seleção, os ajustes de compatibilidade e a homologação local da E1. As dependências diretas são fixadas e o lockfile registra a árvore resolvida. Verificações de produção remota e uso pelo grupo não estão incluídas.
 
@@ -92,3 +92,32 @@ Windows x64 com Node 24.22.1 e pnpm 11.25.0. Docker e WSL não estão instalados
 A configuração Compose foi validada com a CLI oficial Docker Compose 5.7.0. A ausência do Docker Engine impede afirmar que os contêineres foram executados neste computador. A CI está configurada, mas não executada no GitHub enquanto os commits não forem enviados.
 
 Homologação local: instalação com `--frozen-lockfile`, `pnpm peers check`, geração Prisma, migrations nos dois bancos, `pnpm verify` e `pnpm test:smoke` terminaram com exit code 0. O audit de dependências de produção não encontrou vulnerabilidades conhecidas na consulta. Esses resultados não representam desempenho, adoção ou impacto do produto.
+
+## Mobile M1 — 04/11/2026
+
+A versão mobile mantém Node 24.22.1 e pnpm 11.25.0. As versões foram conferidas no registro oficial, no conjunto de módulos do SDK58 e pela checagem real do Expo.
+
+| Componente | Versão | Motivo |
+| --- | --- | --- |
+| Expo | 58.0.23 | Release estável da linha SDK58 |
+| React Native | 0.88.1 | Versão do conjunto suportado pelo SDK58 |
+| React / React DOM mobile | 19.3.0 | Par compatível com Expo; a web preserva 19.3.1 |
+| Expo Router | 58.0.30 | Navegação nativa e rotas por arquivos |
+| SecureStore | 58.0.2 | Credencial opaca no armazenamento seguro do aparelho |
+| Expo Network / System UI | 58.0.4 / 58.0.7 | Conectividade das consultas e tema automático |
+| TanStack Query | 5.105.3 | Mesma versão da web, sem persistência de respostas privadas |
+| TypeScript mobile | 6.0.3 | Versão esperada pela checagem do SDK58 |
+| Jest / Jest Expo | 30.5.2 / 58.0.14 | Preset oficial do SDK e runner já adotado |
+| React Native Testing Library / test-renderer | 14.1.0 / 1.3.0 | RNTL14 usa APIs assíncronas e o novo renderer |
+
+O TypeScript5.9.3 passou na checagem de tipos inicial do mobile, mas o comando oficial Expo install --check exige ~6.0.3. A versão6.0.3 ficou restrita ao mobile; raiz, API, web e gerador OpenAPI continuam em5.9.3. O override do pnpm passou a selecionar somente versões abaixo de6. Não existe override global de React.
+
+Com autoInstallPeers:false e validação estrita, Router/Drawer/Worklets exigiram Gesture Handler3.3.0, Reanimated4.7.1, Worklets0.13.0 e Metro Config0.88.1. São dependências do conjunto publicado, sem introduzir uma função de produto só para utilizá-las. Babel Runtime7.29.10 é direto para os helpers emitidos pelo preset em instalações isoladas. React DOM19.3.0 resolve o peer do Router sem misturar o React da web no app. Não houve ativação global de hoisting ou instalação automática de peers.
+
+As 22 exceções de idade acrescentadas pelo pnpm são limitadas a versões exatas do conjunto Expo resolvido. Os manifests foram conferidos no registry oficial: todas são releases sem sufixo prerelease, possuem integridade publicada e não declaram engines incompatíveis com Node24.22.1. Isso não substitui testes, auditoria de segurança ou homologação em aparelho.
+
+Metro usa expo/metro-config com a detecção automática do workspace, sem aliases entre React web e nativo. Os contratos compartilhados exportam somente tipos gerados. O cliente HTTP importa expo/fetch explicitamente, omite cookies e bloqueia redirects; a política Cache-Control:no-store permanece responsabilidade da API.
+
+Fontes: [release SDK58](https://expo.dev/changelog/sdk-58), [conjunto oficial de módulos SDK58](https://raw.githubusercontent.com/expo/expo/sdk-58/packages/expo/bundledNativeModules.json), [monorepos no Expo](https://docs.expo.dev/guides/monorepos/), [Expo Fetch](https://docs.expo.dev/versions/latest/sdk/expo/#expofetch-api), [SecureStore](https://docs.expo.dev/versions/latest/sdk/securestore/), [RNTL14](https://oss.callstack.com/react-native-testing-library/docs/start/quick-start), [Jest Expo](https://raw.githubusercontent.com/expo/expo/sdk-58/packages/jest-expo/package.json), [overrides no pnpm](https://pnpm.io/settings/dependency-resolution#overrides) e manifests exatos em https://registry.npmjs.org/NOME/VERSAO.
+
+A exportação Android/iOS produz bundles Hermes; não é uma compilação dos binários nativos nem demonstra instalação ou execução em Android/iPhone. A validação nativa é o primeiro passo da continuidade no Mac, descrito em [mobile/README.md](../mobile/README.md).

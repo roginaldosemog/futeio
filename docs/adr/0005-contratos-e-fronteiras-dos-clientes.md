@@ -2,7 +2,7 @@
 
 Data: 02/11/2026.
 
-Estado: contratos web implementados em E2/E3; mobile permanece planejado.
+Estado: contratos web implementados em E2/E3; compartilhamento com mobile implementado no marco M1 em 04/11/2026.
 
 ## Contexto
 
@@ -10,7 +10,7 @@ Web e mobile precisam consumir as mesmas regras sem depender do banco. O backend
 
 ## Decisão
 
-Publicar REST/OpenAPI a partir do NestJS e gerar tipos com openapi-typescript 7.13.0. E2 introduziu o consumidor de acesso e E3 acrescentou cadastro/lista de jogadores. `pnpm contracts:generate` produz o schema e os tipos; `pnpm contracts:check` verifica divergências na CI. O gerador usa fixtures isoladas e não depende das credenciais locais. `--default-non-nullable false` preserva propriedades opcionais de entrada com valor padrão no servidor.
+Publicar REST/OpenAPI a partir do NestJS e gerar tipos com openapi-typescript 7.13.0. E2 introduziu o consumidor de acesso e E3 acrescentou cadastro/lista de jogadores. M1 moveu os tipos para `packages/contracts/src/api-types.ts`, consumidos por web e mobile via `@futeio/contracts`. O pacote é privado e exporta somente tipos; não exige build nem traz dependências de runtime. `pnpm contracts:generate` produz o schema e os tipos; `pnpm contracts:check` verifica divergências na CI. O gerador usa fixtures isoladas e não depende das credenciais locais. `--default-non-nullable false` preserva propriedades opcionais de entrada com valor padrão no servidor.
 
 Não importar tipos Prisma, repositórios ou serviços Nest na web/mobile. Compartilhar contratos e configurações quando houver benefício concreto; manter cálculo e sorteio dentro do backend. Não duplicar regras em Server Actions ou Route Handlers do Next.
 

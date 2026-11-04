@@ -30,9 +30,20 @@ export class SessionService {
   }
 
   async requireBrowser(request: Request): Promise<BrowserContext> {
+    if (request.headers.authorization !== undefined) {
+      // Explicit credentials must never fall back to an ambient cookie. Node
+      // normally keeps only the first Authorization value; inspect raw headers
+      // as well so repeated, even identical, credentials are rejected.
+      const count = request.rawHeaders.filter((_value, index) => index % 2 === 0 && request.rawHeaders[index]!.toLowerCase() === 'authorization').length;
+      const match = /^Bearer ([A-Za-z0-9_-]{43})$/i.exec(request.headers.authorization);
+      if (count !== 1 || !match || request.headers.cookie !== undefined) throw new UnauthorizedException();
+      const context = await this.fromToken(match[1]!);
+      this.authenticated(context);
+      return { ...context, transport: 'bearer' };
+    }
     const token = readSessionCookie(request.headers.cookie);
     if (!token) throw new UnauthorizedException();
-    return this.fromToken(token);
+    return { ...await this.fromToken(token), transport: 'cookie' };
   }
 
   async getBrowser(request: Request, response: Response): Promise<BrowserContext> {
@@ -68,6 +79,6 @@ export class SessionService {
   async logout(context: BrowserContext, response: Response): Promise<void> {
     this.authenticated(context);
     await this.prisma.accessSession.update({ where: { id: context.session.id }, data: { revokedAt: this.clock.now() } });
-    response.clearCookie(SESSION_COOKIE, { httpOnly: true, secure: this.configuration.secureCookies, sameSite: 'lax', path: '/' });
+    if (context.transport !== 'bearer') response.clearCookie(SESSION_COOKIE, { httpOnly: true, secure: this.configuration.secureCookies, sameSite: 'lax', path: '/' });
   }
 }

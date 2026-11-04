@@ -12,10 +12,11 @@ import { PlayerCredentialService } from './player-credential.service';
 import { MemberGuard } from './member.guard';
 import { PlayerAccessService } from './player-access.service';
 import { PlayerAccessController } from './player-access.controller';
+import { NativeAccessController } from './native-access.controller';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [AccessController, PlayerAccessController],
+  controllers: [AccessController, PlayerAccessController, NativeAccessController],
   providers: [
     { provide: AUTH_CONFIGURATION, useFactory: () => loadAuthConfiguration(process.env) },
     { provide: AUTH_CLOCK, useClass: SystemClock },

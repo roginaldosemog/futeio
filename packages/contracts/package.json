@@ -1,0 +1,8 @@
+{
+  "name": "@futeio/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": { "types": "./src/api-types.ts" }
+  }
+}

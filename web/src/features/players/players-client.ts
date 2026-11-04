@@ -1,4 +1,4 @@
-import type { components } from "@/generated/api-types";
+import type { components } from "@futeio/contracts";
 import { apiMutation, apiRequest } from "@/lib/api-client";
 
 export type PlayerSummary = components["schemas"]["PlayerSummaryDto"];

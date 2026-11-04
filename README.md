@@ -1,10 +1,10 @@
-# Futeio
+# Fute.io
 
 Produto para ajudar uma pelada amadora a definir notas de habilidade e formar times equilibrados. O piloto atende um grupo fechado organizado pelo WhatsApp: o administrador seleciona 20 jogadores de linha e o sistema distribui quatro times de cinco. Os goleiros ficam fora do sorteio.
 
 ## Estado do projeto
 
-O MVP web está implementado e verificado localmente: acesso administrativo, cadastro, links revogáveis dos jogadores, edição de nome/foto, avaliações privadas e sorteio de quatro times com histórico. O relatório registra as verificações executadas; a CI publica o resultado por commit no GitHub. Resend e o aplicativo mobile seguem adiados. Publicação e uso pela pelada real ainda não aconteceram.
+O MVP web está implementado e verificado localmente: acesso administrativo, cadastro, links revogáveis dos jogadores, edição de nome/foto, avaliações privadas e sorteio de quatro times com histórico. A branch `codex/mobile-app` acrescenta o primeiro marco nativo: fundação Expo, acesso seguro, lista e consulta de perfis/avaliações. Veja as instruções e os limites em [mobile/README.md](mobile/README.md). Resend continua adiado. Publicação e uso pela pelada real ainda não aconteceram.
 
 | Categoria | Estado |
 | --- | --- |
@@ -14,8 +14,9 @@ O MVP web está implementado e verificado localmente: acesso administrativo, cad
 | Qualidade local de E1 | Lint, tipos, 26 testes unitários, 4 de integração, builds e smoke HTTP de produção passaram em E1 |
 | Qualidade de E2 | Lint, tipos, 77 testes unitários, 19 de integração, 3 de navegador, builds, contratos e smoke passaram |
 | Qualidade de E3 | Lint, tipos, 94 testes unitários, 36 de integração, 6 de navegador, builds, contratos e smoke passaram |
-| Qualidade atual do MVP web | 148 unitários, 70 de integração e 8 de navegador; lint, tipos, builds, contratos e smoke aprovados localmente |
-| CI | Workflow Ubuntu com PostgreSQL e Chrome instalado; [resultado por commit da branch do MVP](https://github.com/roginaldosemog/futeio/actions?query=branch%3Acodex%2Fcomplete-web-mvp) |
+| Qualidade de E4–E7 (web) | 148 unitários, 70 de integração e 8 de navegador; verificações registradas no relatório da entrega |
+| Mobile M1 | Acesso, lista e consulta de perfis/avaliações; [escopo e verificações](docs/entregas/M1-mobile.md) |
+| CI | Workflow Ubuntu com PostgreSQL e Chrome instalado; [resultado por commit da branch mobile](https://github.com/roginaldosemog/futeio/actions?query=branch%3Acodex%2Fmobile-app) |
 | Publicação e uso real | Ainda não realizados |
 | Métricas de uso e impacto | Ainda não coletadas |
 
@@ -31,12 +32,15 @@ O MVP web está implementado e verificado localmente: acesso administrativo, cad
 - [Plano de conclusão do MVP web](docs/pitroom/plans/2026-11-03-completar-mvp-web.md).
 - [Operação local e preparação para o piloto](docs/operacao-piloto.md).
 - [Pesquisa de domínio e publicação econômica para até vinte usuários](docs/pesquisas/2026-11-04-dominio-e-publicacao.md).
+- [Mobile M1: executar, verificar e continuar no Mac](mobile/README.md).
+- [M1: evidências e limites do primeiro marco mobile](docs/entregas/M1-mobile.md).
 - [ADR 0001 — Monorepo e monolito modular](docs/adr/0001-monorepo-e-monolito-modular.md).
 - [ADR 0002 — Identidade, acesso administrativo e links de jogadores](docs/adr/0002-identidade-e-acesso-por-links.md).
 - [ADR 0003 — Avaliações e nota consolidada](docs/adr/0003-avaliacoes-e-nota-consolidada.md).
 - [ADR 0004 — Sorteio explicável e reproduzível](docs/adr/0004-sorteio-explicavel-e-reproduzivel.md).
 - [ADR 0005 — Contratos e fronteiras dos clientes](docs/adr/0005-contratos-e-fronteiras-dos-clientes.md).
 - [ADR 0006 — Fotos privadas no piloto](docs/adr/0006-fotos-privadas-no-piloto.md).
+- [ADR 0007 — Sessões opacas no aplicativo nativo](docs/adr/0007-acesso-nativo-com-sessao-opaca.md).
 
 ## Direção técnica aprovada
 
@@ -45,14 +49,14 @@ O MVP web está implementado e verificado localmente: acesso administrativo, cad
 - Persistência: PostgreSQL, Prisma e migrations.
 - Dados remotos: TanStack Query nas interações que se beneficiem dele.
 - Repositório único: pnpm workspaces e Turborepo.
-- Mobile depois do piloto web: React Native, Expo e Expo Router, consumindo a mesma API.
+- Mobile: React Native, Expo e Expo Router, consumindo a mesma API; primeira etapa autorizada após o MVP web.
 - Testes por camada, ambiente local com Docker Compose e CI/CD com GitHub Actions.
 
 As versões diretas estão fixadas e o lockfile é versionado. A matriz de compatibilidade registra as fontes oficiais e os ajustes necessários entre runtime, frameworks e ferramentas.
 
-## Organização futura
+## Organização
 
-`web/` e `api/` já existem. `mobile/` será criado na etapa mobile. Pacotes compartilhados entrarão em `packages/` somente quando houver consumidores e responsabilidade concreta.
+Um repositório com `web/`, `api/` e `mobile/`. `packages/contracts/` publica somente os tipos gerados do OpenAPI para os dois clientes, sem tipos do Prisma ou componentes visuais compartilhados. `pnpm dev` mantém o comando web/API; `pnpm dev:mobile` inicia o Metro separadamente.
 
 ## Executar e testar
 

@@ -15,3 +15,6 @@ test-results/
 .worktrees/
 .DS_Store
 Thumbs.db
+.expo/
+mobile/android/
+mobile/ios/

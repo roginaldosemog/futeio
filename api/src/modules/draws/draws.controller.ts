@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiCookieAuth, ApiCreatedResponse, ApiForbiddenResponse, ApiHeader, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiCookieAuth, ApiCreatedResponse, ApiForbiddenResponse, ApiHeader, ApiNotFoundResponse, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import type { AccessRequest } from '../access/access-context';
 import { AdminGuard } from '../access/admin.guard';
 import { CsrfGuard } from '../access/csrf.guard';
@@ -9,6 +9,7 @@ import { DrawsService } from './draws.service';
 
 @ApiTags('Draws')
 @ApiCookieAuth('session')
+@ApiBearerAuth('nativeSession')
 @ApiUnauthorizedResponse()
 @ApiForbiddenResponse()
 @UseGuards(MemberGuard)
@@ -18,7 +19,7 @@ export class DrawsController {
 
   @Post()
   @UseGuards(AdminGuard, CsrfGuard)
-  @ApiHeader({ name: 'x-csrf-token', required: true })
+  @ApiHeader({ name: 'x-csrf-token', required: false, description: 'Required with browser cookies; native bearer authentication does not use ambient cookies.' })
   @ApiCreatedResponse({ type: DrawDto })
   @ApiBadRequestResponse()
   @ApiNotFoundResponse()

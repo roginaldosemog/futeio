@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use pitroom-driven-development to implement this plan task-by-task (each task runs as `pitroom run -i --plan <this file> --step N`). Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> **Limite de autorização:** E1 foi autorizada e verificada localmente. Em 03/11/2026, o usuário autorizou E2 com provisionamento manual do único administrador por e-mail/senha e adiou Resend/link administrativo. E3–E4 não estão autorizadas. A existência deste arquivo não autoriza contratar serviços, publicar o produto ou executar as entregas seguintes.
+> **Limite de autorização atualizado:** E1–E3 foram entregues. O pedido para concluir o site autoriza E4–E7 e a preparação operacional de E8, detalhadas no plano `2026-11-03-completar-mvp-web.md`. Resend e mobile seguem adiados; contratar serviços e publicar depende de hospedagem/domínio/orçamento definidos.
 
 **Goal:** Entregar, em uma execução futura autorizada, a base verificável do produto, o acesso administrativo, o cadastro com nota inicial e o acesso restrito dos jogadores por link.
 
@@ -14,7 +14,7 @@
 
 ## Global Constraints
 
-- Autorização atual abrange E1 e E2 revisada em 03/11/2026; E3–E4 continuam planejadas e não autorizadas.
+- Autorização atual abrange a conclusão funcional do MVP web; ver o plano complementar de E4–E7. Mobile e envio de e-mail permanecem adiados.
 - "O MVP atende um único grupo fechado."
 - "O aplicativo mobile virá depois da validação da web responsiva."
 - "E-mail do jogador não é solicitado no MVP."

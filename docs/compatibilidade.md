@@ -1,4 +1,4 @@
-# Matriz de compatibilidade — E1, E2 e E3
+# Matriz de compatibilidade — MVP web
 
 Consulta: 02/11/2026. Esta matriz registra a seleção, os ajustes de compatibilidade e a homologação local da E1. As dependências diretas são fixadas e o lockfile registra a árvore resolvida. Verificações de produção remota e uso pelo grupo não estão incluídas.
 
@@ -49,6 +49,14 @@ Os metadados primários foram consultados em `https://registry.npmjs.org/<pacote
 A [documentação oficial](https://tanstack.com/query/latest/docs/framework/react/installation) declara suporte a React 18+; os metadados da versão no registro npm declaram React e tipos React `^18 || ^19`, atendidos pela baseline. A instalação preservou as versões existentes e acrescentou somente esses dois pacotes, fixados. As exclusões de idade adicionadas pelo pnpm referem-se somente a essas versões verificadas, como registrado no lockfile/configuração.
 
 O gerador de contratos usa `--default-non-nullable false`: propriedades de entrada opcionais continuam opcionais mesmo quando a API fornece um valor padrão. O DTO Swagger declara explicitamente o booleano de vínculo administrativo. Ver [opções oficiais do openapi-typescript](https://openapi-ts.dev/cli#flags).
+
+## Adição para fotos privadas
+
+`sharp` **0.35.5** passou a ser dependência direta da API, com versão exata. O [changelog oficial](https://sharp.pixelplumbing.com/changelog/v0.35.5/) apresenta essa release estável, e os metadados `pnpm view sharp version engines --json` retornaram 0.35.5 e Node `>=20.9.0`, compatível com 24.22.1. O pacote já estava no lockfile como dependência opcional do Next; a instalação não atualizou os frameworks nem a versão resolvida do sharp. O processamento da API agora exige a biblioteca diretamente.
+
+O uso segue a [instalação oficial](https://sharp.pixelplumbing.com/install/) e as [opções de saída](https://sharp.pixelplumbing.com/api-output/): decodificar a imagem, limitar pixels e tamanho, reduzir e recodificar sem conservar metadados. A dependência nativa precisa passar no Windows local e no GitHub/Ubuntu antes de fechar a validação da entrega.
+
+Os limites de PostgreSQL permanecem distintos: até cinco segundos para abrir conexão e um segundo para executar consulta, pool máximo de cinco, sem retries automáticos. A separação segue os parâmetros oficiais de [pg.Pool](https://node-postgres.com/apis/pool) e [pg.Client](https://node-postgres.com/apis/client); a motivação e a verificação estão no plano de conclusão do MVP.
 
 ## Decisões de compatibilidade
 

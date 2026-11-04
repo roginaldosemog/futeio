@@ -2,11 +2,11 @@
 
 Data original: 02/11/2026. Revisão de escopo: 03/11/2026.
 
-Estado: acesso administrativo implementado em E2; geração da credencial de jogador implementada em E3. Resgate e revogação pertencem à futura E4. Evidências nos relatórios [E2](../entregas/E2-acesso-administrativo.md) e [E3](../entregas/E3-cadastro-jogadores.md).
+Estado: acesso administrativo em E2, geração de credenciais em E3 e resgate/revogação em E4 implementados. E4–E7 foram autorizadas no pedido de conclusão do site. Evidências históricas nos relatórios [E2](../entregas/E2-acesso-administrativo.md) e [E3](../entregas/E3-cadastro-jogadores.md); decisões de conclusão no [plano complementar](../pitroom/plans/2026-11-03-completar-mvp-web.md).
 
 ## Contexto e revisão aprovada
 
-A decisão original previa login administrativo por link temporário enviado ao e-mail autorizado. Em 03/11/2026, o usuário adiou o envio por Resend e autorizou provisionar manualmente um único administrador com e-mail e senha. Esta revisão substitui o login por link apenas para o administrador nesta etapa. Jogadores continuam sem e-mail, usuário ou senha no MVP; E3 gera os links e o acesso será implementado na E4.
+A decisão original previa login administrativo por link temporário enviado ao e-mail autorizado. Em 03/11/2026, o usuário adiou o envio por Resend e autorizou provisionar manualmente um único administrador com e-mail e senha. Esta revisão substitui o login por link apenas para o administrador nesta etapa. Jogadores continuam sem e-mail, usuário ou senha no MVP; E3 gera os links e E4 estabelece as sessões.
 
 ## Identidade e autorização
 
@@ -33,18 +33,18 @@ O cookie `futeio_session` é HttpOnly, SameSite=Lax, Secure quando APP_ORIGIN us
 
 A versão da credencial administrativa é uma impressão de e-mail normalizado e hash de senha. Reprovisionar e reiniciar a API muda essa versão e faz sessões antigas falharem na validação; editar `.env` sem reiniciar não troca a configuração já carregada.
 
-O rate limit usa contadores atômicos no PostgreSQL em janelas fixas de 15 minutos: dez tentativas de login por peer, cinco por e-mail e 60 consultas CSRF por peer. Não usa Redis nem confia em X-Forwarded-For. No encaminhamento pelo Next, clientes compartilham o orçamento do peer do proxy; esse limite precisa ser revisto antes de uma topologia pública com proxy confiável. Exceder o limite resulta em 429 e Retry-After.
+O rate limit usa contadores atômicos no PostgreSQL em janelas fixas de 15 minutos: dez tentativas de login por peer, cinco por e-mail e 60 resgates de link por peer. CSRF tem limite de 60 por sessão autenticada, preservando 60 por peer para contextos anônimos. Isso evita que avaliações legítimas de um membro bloqueiem todos os demais atrás do Next. Upload admite 15 tentativas por identidade. Não usa Redis nem confia em X-Forwarded-For. Os orçamentos por peer continuam compartilhados pelo proxy e devem ser observados no piloto. Exceder o limite resulta em 429 e Retry-After.
 
-## Links de jogadores — decisão preservada para E3/E4
+## Links de jogadores — E3/E4
 
 Em E3, cada cadastro gera um segredo pessoal aleatório de 32 bytes. Somente seu hash SHA-256 é persistido em PlayerAccessCredential; a URL usa fragmento em `/acesso/jogador#token=...` e só é devolvida na resposta201. A listagem omite segredo e hash. A interface mantém a confirmação em memória e a limpa ao iniciar outro cadastro, recarregar ou sair; o cache de consultas contém apenas os resumos de jogadores.
 
-O link será reutilizável até revogação, sem e-mail ou senha do jogador, e abrirá somente sessão PLAYER em E4. O segredo não é o ID do perfil.
+O link é reutilizável até revogação, sem e-mail ou senha do jogador, e abre somente sessão PLAYER com duração absoluta de sete dias. O segredo não é o ID do perfil. A expiração ou o logout encerra a sessão, sem invalidar o link. Mesmo uma identidade administrativa entra como PLAYER ao usar esse link.
 
-O administrador poderá revogar a credencial e as sessões derivadas e gerar outro link. O transporte deverá retirar o segredo da URL após o resgate e impedir sua inclusão em logs, caches públicos e referências de terceiros. Resgate, sessão de jogador e revogação ainda não estão implementados na E3.
+O administrador pode revogar a credencial e as sessões derivadas e gerar outro link. O resgate e a mudança de acesso bloqueiam a mesma linha de jogador dentro da transação. Cada requisição valida também a credencial de origem da sessão, impedindo uso após revogação confirmada mesmo numa disputa de resgate/rotação. O cliente retira o segredo da URL antes de qualquer requisição e o mantém somente em memória até o resgate. A API armazena hashes e não registra corpo ou URL nos logs HTTP.
 
 ## Resend adiado e consequências
 
 O contrato de envio e o adaptador Resend existentes permanecem preparatórios e desconectados do módulo de acesso. E2 não registra o adaptador como provedor, não exige chave Resend, não realiza envio e não expõe rotas de solicitação ou resgate de link administrativo. Retomar o envio exigirá autorização e validação específica; a presença do adaptador não comprova integração em produção.
 
-Senha local reduz a dependência de entrega de e-mail nesta etapa, mas exige provisionamento e recuperação manual. O link compartilhável continua sendo a credencial futura dos jogadores e comprova posse do segredo, não identidade civil. Nenhuma dessas decisões autoriza compra de serviços, cadastro aberto ou publicação.
+Senha local reduz a dependência de entrega de e-mail nesta etapa, mas exige provisionamento e recuperação manual. O link compartilhável é a credencial dos jogadores e comprova posse do segredo, não identidade civil. Nenhuma dessas decisões autoriza compra de serviços ou cadastro aberto; publicação segue o plano operacional.

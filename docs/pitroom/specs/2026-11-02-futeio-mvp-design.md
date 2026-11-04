@@ -2,7 +2,7 @@
 
 Data: 02/11/2026, America/Sao_Paulo.
 
-Estado: escopo aprovado pelo responsável do produto. E1–E3 foram implementadas e verificadas localmente e no GitHub/Ubuntu. Em 03/11/2026, o usuário autorizou E3 e a validação da CI. O administrador continua com e-mail e senha provisionados manualmente; envio Resend permanece adiado. E4–E9 continuam planejadas e fora desta autorização. Publicação e uso real exigem evidência própria.
+Estado: escopo aprovado pelo responsável do produto. E1–E3 foram entregues e verificadas localmente e no GitHub/Ubuntu. O pedido para concluir o site autorizou E4–E7, implementadas e verificadas localmente com 148 unitários, 70 integrações e oito jornadas de navegador. O resultado remoto por commit pertence à CI no GitHub. O administrador continua com e-mail e senha provisionados manualmente; envio Resend e mobile permanecem adiados. Publicação, hospedagem e uso real exigem definição operacional e evidência própria.
 
 ## 1. Problema e público
 
@@ -66,7 +66,7 @@ A partir da segunda contribuição, cada inclusão ou alteração recalcula a no
 
 O cálculo e o sorteio usam o valor sem arredondamento de apresentação. Proposta de apresentação técnica: duas casas decimais na nota consolidada. O registro do sorteio preserva o valor usado no cálculo, não apenas o texto formatado.
 
-### Exemplos para testes futuros
+### Exemplos da regra, cobertos nos testes de E6
 
 | Notas vigentes | Resultado esperado |
 | --- | --- |
@@ -79,7 +79,7 @@ O cálculo e o sorteio usam o valor sem arredondamento de apresentação. Propos
 | `[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]` | 5, após retirar 0, 1, 9 e 10 |
 | `[0, 0, 5, 10, 10]` | 5; sobra uma ocorrência de cada extremo |
 
-Esses exemplos são expectativas de teste, não resultados de testes executados.
+Esses casos orientam os testes unitários do cálculo. Resultados executados pertencem ao relatório da entrega; valores matemáticos não são métricas de impacto esportivo.
 
 ## 5. Privacidade e autorização
 
@@ -130,9 +130,9 @@ O Nest publica OpenAPI como contrato REST. Tipos de clientes são derivados dess
 
 ## 7. Acesso, operação e interface
 
-O [ADR 0002](../../adr/0002-identidade-e-acesso-por-links.md) registra a revisão de 03/11/2026: e-mail/senha provisionados para o único administrador em E2, com link administrativo e envio Resend adiados. O futuro link reutilizável e revogável dos jogadores permanece em E3/E4. Sessões e revogação ficam no PostgreSQL; E2 usa cookie administrativo de oito horas, CSRF vinculado à sessão, origem exata e limites de tentativas. Acesso a fotos e caches de dados privados também respeitam o grupo.
+O [ADR 0002](../../adr/0002-identidade-e-acesso-por-links.md) registra e-mail/senha provisionados para o único administrador, com link administrativo e envio Resend adiados. O link reutilizável e revogável dos jogadores foi implementado em E3/E4. Sessões e revogação ficam no PostgreSQL; o administrador tem sessão de oito horas e o jogador de sete dias, com CSRF vinculado à sessão, origem exata e limites de tentativas. Acesso a fotos e caches privados também respeitam o grupo.
 
-Nome, e-mail administrativo e credenciais não entram em logs de requisição. Fotos terão limites de tamanho e tipo, validação do conteúdo, nomes internos gerados pelo servidor e entrega somente a membros. Armazenamento de objetos será escolhido antes do upload; serviço transacional de e-mail só passa a ser dependência de execução quando o envio adiado for retomado. E2 não depende de Resend configurado.
+Nome, e-mail administrativo e credenciais não entram em logs de requisição. Fotos têm limites de tamanho, pixels e tipo, validação do conteúdo e entrega somente a membros. O ADR 0006 fixa bytes privados no PostgreSQL para o piloto, sem caminho de arquivo fornecido pelo cliente ou bucket público. Armazenamento de objetos será avaliado se o volume justificar. Serviço transacional de e-mail só passa a ser dependência quando o envio adiado for retomado; a aplicação não depende de Resend configurado.
 
 Os formulários precisam de rótulos, validação compreensível e estados de carregamento, erro, vazio e sucesso. Avaliar e selecionar os 20 participantes deve funcionar por teclado e em telas pequenas. Tailwind permanece como ferramenta de estilos; primitivas de interação e Storybook entram somente quando houver necessidade e componentes suficientes.
 
@@ -153,7 +153,7 @@ O registro imutável guarda IDs dos participantes, notas usadas, times, semente,
 | Entrega | Resultado | Evidência requerida antes de concluir |
 | --- | --- | --- |
 | E1 — Fundação | Web/API/banco conectados e execução documentada | Instalação limpa, migrations, verificação de saúde, CI e builds |
-| E2 — Acesso administrativo | Único administrador provisionado com e-mail/senha, sessão e contrato OpenAPI | Login válido/inválido, bootstrap após validação, rotação, logout, expiração, CSRF/origem, rate limit e invalidação após reprovisionamento/reinício; validação final pendente |
+| E2 — Acesso administrativo | Único administrador provisionado com e-mail/senha, sessão e contrato OpenAPI | Login válido/inválido, bootstrap após validação, rotação, logout, expiração, CSRF/origem, rate limit e invalidação após reprovisionamento/reinício |
 | E3 — Cadastro | Administrador cria perfil, nota inicial e link | Transação íntegra, controle de acesso, validação e ausência de segredos em logs |
 | E4 — Acesso do jogador | Link abre sessão restrita e pode ser substituído | Revogação de link e sessões, negação de ações administrativas |
 | E5 — Perfil | Edição de nome e foto | Autorização, upload validado e armazenamento privado |
@@ -162,13 +162,13 @@ O registro imutável guarda IDs dos participantes, notas usadas, times, semente,
 | E8 — Piloto | Produto publicado e usado pelo grupo | Jornada completa, operação, restauração e feedback registrado |
 | E9 — Mobile | Jornadas validadas no aplicativo | Plano próprio após feedback web e testes específicos do mobile |
 
-E1–E4 estão detalhadas no [plano das primeiras entregas](../plans/2026-11-02-primeiras-entregas.md). E5–E9 são sequência de produto, com critérios definidos, mas ainda não são tarefas prontas para execução.
+E1–E4 estão detalhadas no [plano das primeiras entregas](../plans/2026-11-02-primeiras-entregas.md). O [plano complementar](../plans/2026-11-03-completar-mvp-web.md) cobre a conclusão funcional web E4–E7 e sua verificação. E8 depende da hospedagem e do uso real; E9 terá plano próprio após o piloto web.
 
 Testes previstos: Jest para regras puras; Supertest com PostgreSQL real de teste para API, transações e permissões; React Testing Library para interações; Playwright para jornadas entre papéis e acessos negados. Na etapa mobile: React Native Testing Library. Cada entrega amplia os testes relevantes, sem meta arbitrária de cobertura ou testes de configuração que apenas espelhem arquivos.
 
 ## 10. Evidências e resultados
 
-Estado atual: E1 implementada e verificada localmente. E2 foi autorizada em 03/11/2026 e está em implementação/validação; o fechamento de comandos e resultados pertence ao relatório E2, ainda pendente. Cadastro de jogadores, avaliações e sorteio não foram entregues. Não há métricas de impacto; verificações locais não comprovam publicação ou execução remota da CI.
+O MVP web inclui cadastro, acesso privado, manutenção de perfis, avaliações e sorteios. Os relatórios de entrega registram somente verificações executadas e distinguem resultados locais, CI e produção. Não há métricas de impacto ou uso real coletadas; testes e cenários sintéticos não comprovam adoção pela pelada.
 
 | Pergunta | Coleta proposta | Limite de interpretação |
 | --- | --- | --- |
@@ -183,9 +183,9 @@ A coleta inicial pode ser manual e por consultas controladas. Não exige uma pla
 
 Ficam fora desta primeira execução: criação pública de grupos, calendário, presença, pagamentos, notificações push, posições, goleiros, múltiplos atributos de habilidade, histórico completo de cada edição de voto, rankings e IA generativa. E-mail/usuário e senha para jogadores e mobile são evoluções, não funcionalidades já entregues.
 
-Antes da configuração: verificar versões estáveis e compatíveis de runtime, pnpm, framework, ORM e ferramentas de teste; registrar a matriz e fontes oficiais. Antes do e-mail, upload e publicação: escolher provedores, domínio e orçamento com o responsável. Isso não impede o planejamento e não autoriza contratar serviços.
+Na configuração, verificar versões estáveis e compatíveis de runtime, pnpm, framework, ORM e ferramentas de teste; registrar a matriz e fontes oficiais. O upload do piloto usa PostgreSQL privado conforme ADR 0006, sem contratação adicional. Antes do e-mail e da publicação, definir provedores, domínio e orçamento com o responsável. A implementação local não autoriza contratar serviços.
 
-As durações exatas das sessões e o limite de busca do algoritmo são parâmetros técnicos a fixar e testar nas respectivas entregas. Não há prazos de entrega estimados sem conhecer a disponibilidade de trabalho. Esses pontos não mudam o escopo funcional aprovado.
+As durações das sessões foram fixadas no ADR 0002; o orçamento do algoritmo, no ADR 0004. Mudanças desses parâmetros exigem novos testes e, quando alterarem a reprodução, nova versão da estratégia. Não há prazo estimado para hospedagem ou mobile sem suas definições operacionais.
 
 ## 12. Fontes e decisões
 

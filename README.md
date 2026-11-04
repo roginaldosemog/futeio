@@ -4,17 +4,18 @@ Produto para ajudar uma pelada amadora a definir notas de habilidade e formar ti
 
 ## Estado do projeto
 
-Em 03/11/2026, E1–E3 estão implementadas e verificadas localmente e no GitHub/Ubuntu. O administrador acessa com e-mail/senha, cadastra jogadores com nota inicial e recebe o link pessoal. O envio Resend segue adiado. Acesso pelo link, edição de perfil, avaliações dos membros e sorteio continuam em entregas posteriores.
+O MVP web está implementado e verificado localmente: acesso administrativo, cadastro, links revogáveis dos jogadores, edição de nome/foto, avaliações privadas e sorteio de quatro times com histórico. O relatório registra as verificações executadas; a CI publica o resultado por commit no GitHub. Resend e o aplicativo mobile seguem adiados. Publicação e uso pela pelada real ainda não aconteceram.
 
 | Categoria | Estado |
 | --- | --- |
 | Escopo e decisões | Registrados nos documentos abaixo |
-| Web e API | Login administrativo, cadastro/lista de jogadores, nota inicial e geração de link pessoal |
-| Banco | Grupo piloto, identidade/sessão, perfis, contribuições iniciais e credenciais com hash |
+| Web e API | Login, cadastro e links, perfis privados, avaliações vigentes e sorteios registrados |
+| Banco | Grupo, identidades/sessões, credenciais com hash, fotos privadas, votos e snapshots dos sorteios |
 | Qualidade local de E1 | Lint, tipos, 26 testes unitários, 4 de integração, builds e smoke HTTP de produção passaram em E1 |
 | Qualidade de E2 | Lint, tipos, 77 testes unitários, 19 de integração, 3 de navegador, builds, contratos e smoke passaram |
-| Qualidade atual de E3 | Lint, tipos, 94 testes unitários, 36 de integração, 6 de navegador, builds, contratos e smoke passaram |
-| CI | E1/E2 e E3 passaram no GitHub/Ubuntu com Chrome instalado e sandbox solicitada |
+| Qualidade de E3 | Lint, tipos, 94 testes unitários, 36 de integração, 6 de navegador, builds, contratos e smoke passaram |
+| Qualidade atual do MVP web | 148 unitários, 70 de integração e 8 de navegador; lint, tipos, builds, contratos e smoke aprovados localmente |
+| CI | Workflow Ubuntu com PostgreSQL e Chrome instalado; [resultado por commit da branch do MVP](https://github.com/roginaldosemog/futeio/actions?query=branch%3Acodex%2Fcomplete-web-mvp) |
 | Publicação e uso real | Ainda não realizados |
 | Métricas de uso e impacto | Ainda não coletadas |
 
@@ -26,11 +27,15 @@ Em 03/11/2026, E1–E3 estão implementadas e verificadas localmente e no GitHub
 - [E1: verificações, reprodução limpa e limitações](docs/entregas/E1-fundacao.md).
 - [E2: acesso administrativo e verificações](docs/entregas/E2-acesso-administrativo.md).
 - [E3: cadastro, nota inicial, links e evidências](docs/entregas/E3-cadastro-jogadores.md).
+- [E4–E7: MVP web, regressões corrigidas e evidências](docs/entregas/E4-E7-mvp-web.md).
+- [Plano de conclusão do MVP web](docs/pitroom/plans/2026-11-03-completar-mvp-web.md).
+- [Operação local e preparação para o piloto](docs/operacao-piloto.md).
 - [ADR 0001 — Monorepo e monolito modular](docs/adr/0001-monorepo-e-monolito-modular.md).
 - [ADR 0002 — Identidade, acesso administrativo e links de jogadores](docs/adr/0002-identidade-e-acesso-por-links.md).
 - [ADR 0003 — Avaliações e nota consolidada](docs/adr/0003-avaliacoes-e-nota-consolidada.md).
 - [ADR 0004 — Sorteio explicável e reproduzível](docs/adr/0004-sorteio-explicavel-e-reproduzivel.md).
 - [ADR 0005 — Contratos e fronteiras dos clientes](docs/adr/0005-contratos-e-fronteiras-dos-clientes.md).
+- [ADR 0006 — Fotos privadas no piloto](docs/adr/0006-fotos-privadas-no-piloto.md).
 
 ## Direção técnica aprovada
 
@@ -129,7 +134,7 @@ Depois de alterar e-mail ou senha, reinicie a API. A versão da credencial é co
 
 O navegador usa `futeio_session`, `HttpOnly`, `SameSite=Lax` e `Secure` em HTTPS, com sessão administrativa de oito horas e revogação no servidor. Login e logout exigem a origem exata e token CSRF obtido em `GET /api/v1/auth/csrf`; renove o token após a rotação de sessão no login. O banco armazena hashes dos tokens.
 
-Há limites por janela de 15 minutos: dez logins por peer de rede, cinco por e-mail e 60 solicitações CSRF por peer. Sem confiança em `X-Forwarded-For`, clientes encaminhados pelo Next compartilham o orçamento do proxy nesta etapa. O envio Resend e o login administrativo por link estão adiados: o adaptador não está registrado e não há rotas de solicitação/resgate de link administrativo.
+Há limites por janela de 15 minutos: dez logins por peer de rede, cinco por e-mail e 60 resgates de link por peer. CSRF permite 60 solicitações por sessão autenticada; contextos anônimos compartilham o limite de 60 por peer. Upload permite 15 tentativas por identidade. Sem confiança em `X-Forwarded-For`, acessos anônimos e logins encaminhados pelo Next compartilham o orçamento do proxy. O envio Resend e o login administrativo por link estão adiados: o adaptador não está registrado e não há rotas de solicitação/resgate de link administrativo.
 
 Após compilar a API, `pnpm contracts:generate` atualiza o contrato OpenAPI e os tipos de cliente; `pnpm contracts:check` verifica divergência sem depender de credenciais locais. As quatro variáveis administrativas também são repassadas pelo Turbo quando fornecidas pelo ambiente do processo. Os resultados estão no relatório E2.
 
@@ -137,11 +142,25 @@ Após compilar a API, `pnpm contracts:generate` atualiza o contrato OpenAPI e os
 
 Após entrar, use **Gerenciar jogadores** ou [a página de jogadores](http://localhost:3000/administracao/jogadores). Informe nome e nota inteira de 0 a 10; e-mail do jogador não é solicitado. Marque **Este é o meu perfil** somente ao cadastrar você mesmo como jogador. Nomes repetidos são permitidos; o vínculo do seu perfil administrativo é único.
 
-O cadastro confirmado apresenta o link com ação de copiar. Ele aparece somente nessa confirmação e desaparece ao cadastrar outro jogador, recarregar ou sair da página. A lista não recupera links. **O acesso dos jogadores pelo link será implementado na E4**; a E3 gera a credencial, mas não tem página de resgate, rotação ou revogação.
+O cadastro confirmado apresenta o link com ação de copiar. Ele aparece somente nessa confirmação e desaparece ao cadastrar outro jogador, recarregar ou sair da página. A lista não recupera links. Abra o perfil para gerar outro link ou revogar o acesso; ambas as ações invalidam o link anterior e todas as sessões dele. A geração de outro link exige confirmação e apresenta o novo segredo somente uma vez.
 
 Se o resultado do cadastro for incerto, confira a lista antes de tentar novamente. A interface não repete a criação automaticamente. Uma falha ao atualizar a lista após resposta201 mantém a confirmação e o link disponíveis.
 
-A nota exibida nesta entrega é a contribuição inicial do administrador. Avaliações de membros, atualização de votos e cálculo das médias/cortes entram na E6.
+## Usar o MVP web
+
+Jogadores abrem o link pessoal, escolhem **Entrar na pelada** e recebem uma sessão de sete dias. O segredo é removido do endereço antes da requisição; o link continua válido após logout até o administrador revogá-lo. O acesso pelo link sempre concede papel de jogador, inclusive no perfil do próprio administrador.
+
+Em `/jogadores`, busque um participante e abra seu perfil. A lista mostra **Avaliação pendente** ou a nota que você deu. Cada nova avaliação substitui sua contribuição vigente, incluindo a nota inicial do administrador. Autoavaliação é permitida a qualquer momento. A tabela existe dentro do perfil: o administrador vê os nomes dos autores e jogadores identificam somente a própria autoria.
+
+A nota consolidada usa uma contribuição inicialmente; 2–4 recebem média simples, 5–10 descartam uma ocorrência menor e uma maior, 11+ descartam duas de cada extremo. A interface apresenta duas casas decimais; o backend usa o valor sem esse arredondamento.
+
+O próprio jogador e o administrador podem editar nome, enviar foto JPEG/PNG de até 2 MiB e removê-la. A imagem é validada pelos pixels, reduzida para até 512 px, convertida para JPEG sem metadados e entregue somente a membros autenticados.
+
+Em `/administracao/sorteios`, selecione exatamente vinte jogadores de linha. O resultado apresenta quatro times de cinco, notas capturadas, somas, médias e diferença entre somas. `/sorteios` lista os cinquenta registros mais recentes. Cada snapshot guarda semente e versões, permanece acessível pelo próprio endereço e não muda com avaliações posteriores. Os goleiros ficam fora da seleção. A heurística aproxima as somas e não promete ótimo global ou equilíbrio esportivo comprovado.
+
+Para medir o algoritmo com cenários sintéticos, após compilar a API, execute `node api/scripts/benchmark-draw.cjs`. O script imprime os cenários, orçamento fixo, vinte execuções, mediana, p95 e diferença de somas. Esses dados não medem adoção nem impacto na pelada.
+
+Não execute duas suítes de integração simultâneas contra o mesmo banco de teste: os cenários usam relógios controlados e limpeza de sessões expiradas. O comando padrão executa os arquivos sequencialmente.
 
 ## CI e limites da verificação
 
@@ -151,4 +170,4 @@ Neste computador, os testes usaram PostgreSQL 18.6 portátil, obtido do distribu
 
 ## Evidências para o portfólio
 
-E1–E3 registram decisões, testes locais e resultados da CI no GitHub. Exemplos do sorteio, publicação e feedback da pelada serão acrescentados nas próximas etapas. Tempos, adesão e percepção de equilíbrio só serão apresentados como resultados depois de coletados.
+E1–E7 registram decisões e verificações; E4–E7 acrescentam cenários sintéticos do sorteio, jornadas reais de navegador e correções demonstradas por testes. A CI mantém o resultado remoto por commit. Publicação e feedback da pelada pertencem ao piloto. Tempos, adesão e percepção de equilíbrio só serão apresentados como impacto depois de coletados com o grupo.

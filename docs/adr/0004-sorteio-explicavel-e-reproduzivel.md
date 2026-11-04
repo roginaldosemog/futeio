@@ -2,7 +2,7 @@
 
 Data: 02/11/2026.
 
-Estado: objetivo funcional aceito; estratégia técnica inicial proposta para a entrega E7, ainda não implementada ou medida.
+Estado: estratégia E7 implementada como `seeded-greedy-swaps-v1` e medida com cenários sintéticos. Uso e equilíbrio em campo ainda não medidos.
 
 ## Contexto
 
@@ -14,9 +14,9 @@ Manter o algoritmo como função pura no módulo de sorteios da API. Entradas: l
 
 Começar com construção de distribuições e melhorias por trocas. Ordenar candidatos pela diferença entre a maior e a menor soma de time; usar dispersão das somas como desempate. Escolhas de desempate devem ser determinísticas para a mesma entrada, versão e semente.
 
-O orçamento de busca será fixado e medido durante E7 como quantidade determinística de tentativas/trocas, vinculada à versão ou registrada com o resultado. A função usará ordenação canônica dos participantes por ID, de modo que a ordem de leitura do banco não altere o sorteio. Um corte por tempo de relógio não determina a solução reproduzível. A proposta é uma heurística: não há garantia de ótimo global. Mesmo com notas extremas ou iguais, o algoritmo precisa produzir uma composição válida e explicar os indicadores do resultado.
+O orçamento fixado pela versão é de 64 tentativas e até 32 melhorias por troca em cada tentativa. A função ordena canonicamente os participantes por ID e usa um gerador pseudoaleatório determinístico derivado da semente. Distribui notas maiores primeiro no time com menor soma e vaga livre, variando empates; depois testa trocas e mantém melhorias de diferença de somas, com variância como desempate. A ordem de leitura do banco não altera o resultado. Um corte por tempo de relógio não determina a solução. É uma heurística: não há garantia de ótimo global. Notas extremas e iguais preservam uma composição válida.
 
-O backend lê as notas em uma visão consistente e registra o resultado com IDs, notas usadas sem arredondamento visual, semente, versões do algoritmo e do cálculo, todos os parâmetros de busca que não estejam fixados pela versão e instante. Uma alteração posterior de avaliação não muda um sorteio existente.
+O backend lê as notas em transação `RepeatableRead` e registra IDs, nomes capturados, notas usadas sem arredondamento visual, semente, versões do algoritmo/cálculo e instante. Os limites da busca são constantes da versão. Uma alteração posterior de nome ou avaliação não muda o snapshot. Somente administradores geram; membros consultam os resultados do próprio grupo. A listagem apresenta os cinquenta mais recentes, sem excluir os anteriores.
 
 ## Alternativas consideradas
 

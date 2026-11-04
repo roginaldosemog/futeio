@@ -2,9 +2,9 @@
 
 Data: 02/11/2026.
 
-Estado: contribuição inicial e unicidade implementadas em E3. Avaliações dos membros, reavaliação, visibilidade da tabela e cálculo consolidado permanecem planejados para E6.
+Estado: contribuição inicial e unicidade implementadas em E3; avaliações dos membros, reavaliação, visibilidade da tabela e cálculo consolidado implementados em E6.
 
-Em E3, o cadastro grava uma única Evaluation com o administrador autenticado como autor, inclusive no perfil vinculado a ele. A chave de grupo/alvo/avaliador impede duplicação. A nota exibida é essa contribuição inicial; não há endpoints de votação nem média/cortes implementados. Evidências no [relatório E3](../entregas/E3-cadastro-jogadores.md).
+O cadastro grava uma única Evaluation com o administrador autenticado como autor, inclusive no perfil vinculado a ele. A chave de grupo/alvo/avaliador impede duplicação. `POST /players/:id/evaluations` faz upsert da contribuição do usuário autenticado; o cliente não fornece autor. Lista, perfil e sorteio usam a função pura `calculateRating`, versão `trimmed-mean-v1`, sem arredondamento de apresentação. A tabela para jogadores omite IDs, nomes e datas dos outros avaliadores e ordena por valor, sem pseudônimos estáveis. O administrador recebe os nomes, mas mantém permissão de alterar somente a própria contribuição.
 
 ## Contexto e decisão
 

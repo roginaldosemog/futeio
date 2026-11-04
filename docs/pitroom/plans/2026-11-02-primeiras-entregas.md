@@ -99,7 +99,7 @@ Depois dos testes da tarefa, executar as verificações da CI que ela afeta, ins
 **Conclusão:** um ambiente limpo consegue preparar o banco, executar web/API e repetir os testes de saúde. O README deixa de apresentar comandos como futuros somente depois dessa comprovação. Não declarar publicação nesta entrega.
 
 
-Evidência de E1: código no commit `9038860`, verificado também em cópia limpa. Ver [relatório da entrega](../../entregas/E1-fundacao.md). A execução de E2 foi autorizada posteriormente, em 03/11/2026; seu [relatório](../../entregas/E2-acesso-administrativo.md) ainda aguarda verificações finais. A conclusão de E1 não certifica CI remota ou publicação.
+Registro histórico de E1: código no commit `9038860`, verificado também em cópia limpa. Ver [relatório da entrega](../../entregas/E1-fundacao.md). E2 foi autorizada e entregue depois; seu [relatório](../../entregas/E2-acesso-administrativo.md) registra as verificações, incluindo a validação remota posterior. O fechamento local de E1 não certificava CI ou publicação.
 
 Adaptação do ambiente em E1: Docker Engine não estava disponível. A definição Compose foi criada e validada com a CLI oficial; os bancos reais usados nos testes foram PostgreSQL 18.6 portátil, com clusters separados. A marcação dos passos registra a implementação e as verificações locais descritas no relatório; não certifica subida de contêineres ou execução do workflow no GitHub.
 
@@ -107,7 +107,7 @@ Adaptação do ambiente em E1: Docker Engine não estava disponível. A definiç
 
 **Worker:** capable
 
-Estado em 03/11/2026: E2 implementada e verificada localmente no commit `22742a2`. O usuário adiou o envio Resend e o link administrativo. Evidências no [relatório E2](../../entregas/E2-acesso-administrativo.md). E3 e seguintes permanecem fora desta autorização.
+Registro do fechamento de E2: implementada e verificada localmente no commit `22742a2`. O usuário adiou o envio Resend e o link administrativo. Evidências no [relatório E2](../../entregas/E2-acesso-administrativo.md). E3 e seguintes exigiram autorização posterior, já recebida para a conclusão funcional web; os passos abaixo preservam o recorte histórico de E2.
 
 **Files:**
 - Acesso: `api/src/modules/access/` com configuração, password, sessão, CSRF, guard administrativo, rate limit, DTOs e controller. O adaptador Resend existente fica desconectado e sem rotas de envio/resgate.
@@ -132,13 +132,13 @@ Estado em 03/11/2026: E2 implementada e verificada localmente no commit `22742a2
 - [x] **Passo 6 — Verificar a entrega integrada.** Executar instalação pelo lockfile, migrations isoladas, `pnpm verify`, `pnpm contracts:check`, `pnpm test:e2e`, `pnpm test:smoke`, peers e audit. Inspecionar cookie/origem, sessão, credenciais de fixture e vazamentos; usar dados fictícios isolados. E-mail real não é critério E2 porque o envio foi explicitamente adiado. Preencher comandos, contagens, exit codes, ambiente e limitações no relatório E2 somente depois de executar.
 - [x] **Passo 7 — Revisar e integrar.** Conferir diff e ausência de segredos; atualizar README, ADR 0002, matriz e relatório. Fazer commits revisados apenas pelo responsável pela integração, com autoria exclusiva do usuário e sem coautoria. Não iniciar E3, contratar serviços ou publicar por consequência deste passo.
 
-**Conclusão exigida:** o administrador provisionado autentica com senha, recebe sessão protegida, consulta a área administrativa e encerra/invalida o acesso conforme os critérios. Não há cadastro público, recuperação automática, envio Resend ou links administrativos. Verificações registradas: 77 unitários, 19 integrações PostgreSQL, três jornadas de navegador, builds, contratos e smoke; revisão independente concluída. Sem publicação ou execução remota da CI.
+**Conclusão de E2:** o administrador provisionado autentica com senha, recebe sessão protegida, consulta a área administrativa e encerra/invalida o acesso conforme os critérios. Não há cadastro público, recuperação automática, envio Resend ou links administrativos. Naquele fechamento local: 77 unitários, 19 integrações PostgreSQL, três jornadas de navegador, builds, contratos e smoke, com revisão independente. A CI remota foi validada posteriormente e está registrada no relatório; publicação não foi realizada.
 
 ### Task 3: E3 — Cadastro transacional com nota inicial e link pessoal
 
 **Worker:** standard
 
-Estado em 03/11/2026: implementada e verificada no commit `ab5c2ca`, em branch própria. [Relatório E3](../../entregas/E3-cadastro-jogadores.md): 94 unitários, 36 integrações, seis jornadas de navegador e CI GitHub/Ubuntu aprovada. E4 não foi iniciada.
+Registro do fechamento de E3: implementada e verificada no commit `ab5c2ca`, em branch própria. [Relatório E3](../../entregas/E3-cadastro-jogadores.md): 94 unitários, 36 integrações, seis jornadas de navegador e CI GitHub/Ubuntu aprovada. Naquele fechamento, E4 ainda não havia sido iniciada; sua conclusão e E5–E7 estão no plano complementar.
 
 **Files:**
 - Criar: `api/src/modules/players/players.module.ts`, `players.controller.ts`, `create-player.service.ts` e DTOs de entrada/saída.
@@ -178,14 +178,14 @@ Estado em 03/11/2026: implementada e verificada no commit `ab5c2ca`, em branch p
 - Link válido abre sessão; o segredo reutilizável continua válido até revogação. Logout encerra apenas a sessão atual. Rotação devolve nova `accessUrl` uma vez e invalida o segredo anterior e suas sessões. A mesma operação também gera um link quando não há credencial ativa. Revogação sem rotação deixa o jogador sem novo acesso até o administrador gerar outro link.
 - Perfil mínimo nesta entrega: identificação, nome e foto opcional já armazenada. Edição e upload são E5; tabela de avaliações é E6. Não apresentar controles falsamente funcionais.
 
-- [ ] **Passo 1 — Fixar o transporte e escrever os cenários.** Definir a página de entrada que recebe o segredo sem propagá-lo para logs ou terceiros e o remove do endereço após resgate. Registrar sessão de jogador com duração absoluta inicial proposta de sete dias; a expiração da sessão não revoga o link. Testar token válido, inválido e revogado, expiração da sessão, reabertura do mesmo link, logout e nova entrada.
-- [ ] **Passo 2 — Testar as fronteiras de acesso.** Jogador acessa perfis do grupo, mas não cadastra outro perfil, não gira/revoga links e não gera sorteios futuros. A lista não devolve e-mail administrativo, hash ou link. Contexto de grupo/autor vem da sessão; trocar IDs no request não concede acesso. Uma identidade com vínculo administrativo usando a credencial de jogador continua com sessão `PLAYER`.
-- [ ] **Passo 3 — Testar revogação e concorrência.** Criar duas sessões derivadas do mesmo link, rotacionar e exigir `401` para ambas e para novo resgate do segredo antigo. Cobrir também revogar sem substituição → gerar novo link pelo endpoint de rotação → acessar pelo novo link, mantendo segredo e sessões antigas inválidos. Repetir com resgate simultâneo à rotação: depois do commit da revogação, nenhuma sessão derivada do segredo antigo pode autenticar. Perfil e nota inicial permanecem intactos.
-- [ ] **Passo 4 — Demonstrar falha e implementar.** Rodar `pnpm --filter @futeio/api run test:integration --runInBand player-access.e2e-spec.ts` antes do resgate e registrar falha de comportamento. Implementar troca da credencial por sessão, escopo de papel, verificação de validade em cada requisição e revogação consistente. Ampliar OpenAPI com os endpoints de E4 e regenerar os tipos de cliente antes de consumi-los na web. Repetir os casos esperando sucesso.
-- [ ] **Passo 5 — Implementar a experiência web mínima.** Resgate mostra o perfil acessado e oferece saída; link inválido orienta solicitar outro ao administrador. O administrador tem ação explícita de gerar novo link e aviso de que o anterior deixará de funcionar. Não renderizar links secretos em tabelas, atributos de elementos ou dados de hidratação de listagens.
-- [ ] **Passo 6 — Verificar e integrar.** Executar integração, `pnpm --filter @futeio/web run test:unit --runInBand player-access.test.tsx`, `pnpm run test:e2e player-access.spec.ts` e regressão dos testes de acesso/cadastro. Inspecionar respostas da API, URLs finais e logs. Atualizar instruções de compartilhamento e recuperação. Commit futuro revisado: `feat: grant and revoke player access through personal links`.
+- [x] **Passo 1 — Fixar o transporte e escrever os cenários.** Definir a página de entrada que recebe o segredo sem propagá-lo para logs ou terceiros e o remove do endereço após resgate. Registrar sessão de jogador com duração absoluta inicial proposta de sete dias; a expiração da sessão não revoga o link. Testar token válido, inválido e revogado, expiração da sessão, reabertura do mesmo link, logout e nova entrada.
+- [x] **Passo 2 — Testar as fronteiras de acesso.** Jogador acessa perfis do grupo, mas não cadastra outro perfil, não gira/revoga links e não gera sorteios futuros. A lista não devolve e-mail administrativo, hash ou link. Contexto de grupo/autor vem da sessão; trocar IDs no request não concede acesso. Uma identidade com vínculo administrativo usando a credencial de jogador continua com sessão `PLAYER`.
+- [x] **Passo 3 — Testar revogação e concorrência.** Criar duas sessões derivadas do mesmo link, rotacionar e exigir `401` para ambas e para novo resgate do segredo antigo. Cobrir também revogar sem substituição → gerar novo link pelo endpoint de rotação → acessar pelo novo link, mantendo segredo e sessões antigas inválidos. Repetir com resgate simultâneo à rotação: depois do commit da revogação, nenhuma sessão derivada do segredo antigo pode autenticar. Perfil e nota inicial permanecem intactos.
+- [x] **Passo 4 — Demonstrar falha e implementar.** Rodar `pnpm --filter @futeio/api run test:integration --runInBand player-access.e2e-spec.ts` antes do resgate e registrar falha de comportamento. Implementar troca da credencial por sessão, escopo de papel, verificação de validade em cada requisição e revogação consistente. Ampliar OpenAPI com os endpoints de E4 e regenerar os tipos de cliente antes de consumi-los na web. Repetir os casos esperando sucesso.
+- [x] **Passo 5 — Implementar a experiência web mínima.** Resgate mostra o perfil acessado e oferece saída; link inválido orienta solicitar outro ao administrador. O administrador tem ação explícita de gerar novo link e aviso de que o anterior deixará de funcionar. Não renderizar links secretos em tabelas, atributos de elementos ou dados de hidratação de listagens.
+- [x] **Passo 6 — Verificar e integrar.** Executar integração, `pnpm --filter @futeio/web run test:unit --runInBand player-access.test.tsx`, `pnpm test:e2e` (conjunto completo do orquestrador) e regressão dos testes de acesso/cadastro. Inspecionar respostas da API, URLs finais e logs. Atualizar instruções de compartilhamento e recuperação. Commit futuro revisado: `feat: grant and revoke player access through personal links`.
 
-**Conclusão:** um participante sem e-mail acessa seu perfil pelo link, continua restrito ao papel de jogador e perde o acesso quando o administrador revoga a credencial. Ainda não há avaliações completas, foto enviada ou sorteio implementado.
+**Conclusão de E4:** um participante sem e-mail acessa seu perfil pelo link, continua restrito ao papel de jogador e perde o acesso quando o administrador revoga a credencial. Fotos, avaliações completas e sorteio foram entregues depois, em E5–E7, conforme o plano complementar e o relatório de conclusão do MVP web.
 
 ## Sequência depois de E4
 
@@ -217,4 +217,4 @@ Os casos numéricos da seção 4 do escopo serão os primeiros testes de E6. Em 
 
 Registrar comandos realmente executados, resultado, revisão e limitações no histórico de entrega. Não marcar checkboxes por existir um arquivo. Documento de entrega deve separar teste automatizado, inspeção manual, ambiente usado e resultado de produção.
 
-Ao final de E4, atualizar o plano com o que efetivamente foi entregue e preparar E5/E6 a partir do código existente. Nenhuma execução está agendada ou disparada por este plano.
+E4–E7 foram implementadas e verificadas conforme o plano complementar de conclusão do MVP web e seu relatório. Nenhuma execução futura de hospedagem, e-mail ou mobile é agendada por este plano.

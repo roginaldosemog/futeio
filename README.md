@@ -30,6 +30,7 @@ O MVP web está implementado e verificado localmente: acesso administrativo, cad
 - [E4–E7: MVP web, regressões corrigidas e evidências](docs/entregas/E4-E7-mvp-web.md).
 - [Plano de conclusão do MVP web](docs/pitroom/plans/2026-11-03-completar-mvp-web.md).
 - [Operação local e preparação para o piloto](docs/operacao-piloto.md).
+- [Pesquisa de domínio e publicação econômica para até vinte usuários](docs/pesquisas/2026-11-04-dominio-e-publicacao.md).
 - [ADR 0001 — Monorepo e monolito modular](docs/adr/0001-monorepo-e-monolito-modular.md).
 - [ADR 0002 — Identidade, acesso administrativo e links de jogadores](docs/adr/0002-identidade-e-acesso-por-links.md).
 - [ADR 0003 — Avaliações e nota consolidada](docs/adr/0003-avaliacoes-e-nota-consolidada.md).

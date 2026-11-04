@@ -44,11 +44,11 @@ describe("PlayersAdministration", () => {
     expect(screen.getByRole("link", { name: "Voltar à administração" })).toHaveAttribute("href", "/administracao");
   });
   it("shows the roster and prevents linking the administrator a second time", async () => {
-    listMock.mockResolvedValue([{ ...player, isOwnProfile: true }]);
+    listMock.mockResolvedValue([{ ...player, rating: 7 / 3, isOwnProfile: true }]);
     render(<PlayersAdministration />);
     const roster = await screen.findByRole("list", { name: "Jogadores cadastrados" });
     expect(within(roster).getByText("Colega")).toBeInTheDocument();
-    expect(within(roster).getByText("Nota: 7")).toBeInTheDocument();
+    expect(within(roster).getByText("Nota: 2,33")).toBeInTheDocument();
     expect(within(roster).getByText("Seu perfil")).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Este é o meu perfil" })).toBeDisabled();
   });

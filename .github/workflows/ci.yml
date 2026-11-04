@@ -80,5 +80,5 @@ jobs:
         run: pnpm test:smoke
       - name: Install stable Google Chrome and browser dependencies
         run: pnpm --filter @futeio/web exec playwright install --with-deps --no-remove chrome
-      - name: Browser authentication journeys
+      - name: Browser MVP journeys with installed Chrome
         run: pnpm test:e2e

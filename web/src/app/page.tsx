@@ -12,7 +12,10 @@ export default function HomePage() {
 
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-5 border-b border-[#d6e2db] px-6 py-7 sm:px-10 sm:py-9">
         <p className="text-2xl font-bold tracking-tight sm:text-3xl">Futeio</p>
-        <Link className="inline-flex min-h-12 items-center rounded-xl border border-[#6b8576] px-5 py-3 font-semibold transition-colors hover:bg-[#e7efea] motion-reduce:transition-none" href="/entrar">
+        <Link
+          className="inline-flex min-h-12 items-center rounded-xl border border-[#6b8576] px-5 py-3 font-semibold transition-colors hover:bg-[#e7efea] motion-reduce:transition-none"
+          href="/entrar"
+        >
           Entrar
         </Link>
       </header>
@@ -22,18 +25,29 @@ export default function HomePage() {
         id="conteudo"
       >
         <h1 className="max-w-[15ch] text-4xl leading-[1.1] font-bold tracking-[-0.03em] text-balance sm:text-6xl lg:text-7xl">
-          A pelada da turma, com mais organização.
+          A turma se reúne. Os times se equilibram.
         </h1>
         <p className="mt-7 max-w-[52ch] text-lg leading-relaxed text-[#3c5b4b] sm:text-xl">
-          Estamos construindo o Futeio para ajudar a organizar o futebol de quem
-          joga junto. A primeira versão está sendo preparada para uma pelada real.
+          Avalie quem joga com você, atualize seu perfil e acompanhe os times da próxima pelada. O
+          Futeio reúne as notas da turma para ajudar no sorteio.
         </p>
-        <p className="mt-10 flex items-center gap-3 text-sm font-semibold text-[#286548] sm:text-base">
-          <span
-            aria-hidden="true"
-            className="size-2 shrink-0 rounded-full bg-[#286548]"
-          />
-          Em desenvolvimento
+        <div className="mt-9 flex flex-wrap items-center gap-5">
+          <Link
+            href="/jogadores"
+            className="inline-flex min-h-12 items-center rounded-xl bg-[#163b2a] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#22533d] motion-reduce:transition-none"
+          >
+            Acessar a pelada
+          </Link>
+          <Link
+            href="/entrar"
+            className="inline-flex min-h-12 items-center font-semibold underline underline-offset-4"
+          >
+            Sou administrador
+          </Link>
+        </div>
+        <p className="mt-6 max-w-[60ch] text-sm leading-relaxed text-[#3c5b4b]">
+          É jogador e ainda não entrou? Abra o link pessoal enviado pelo administrador. Os perfis e
+          as avaliações ficam dentro do grupo.
         </p>
       </main>
 

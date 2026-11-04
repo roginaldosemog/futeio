@@ -19,16 +19,26 @@ export async function apiRequest(path: string, options: RequestInit = {}) {
 async function csrfToken(): Promise<string> {
   const response = await apiRequest("auth/csrf");
   const body: unknown = await response.json();
-  if (typeof body !== "object" || body === null || !("csrfToken" in body) || typeof body.csrfToken !== "string" || !body.csrfToken) {
+  if (
+    typeof body !== "object" ||
+    body === null ||
+    !("csrfToken" in body) ||
+    typeof body.csrfToken !== "string" ||
+    !body.csrfToken
+  ) {
     throw new AccessError(503);
   }
   return body.csrfToken;
 }
 
-export async function apiMutation(path: string, body: object) {
+export async function apiMutation(
+  path: string,
+  body: object = {},
+  method: "POST" | "DELETE" = "POST",
+) {
   const token = await csrfToken();
   return apiRequest(path, {
-    method: "POST",
+    method,
     headers: { "Content-Type": "application/json", "x-csrf-token": token },
     body: JSON.stringify(body),
   });

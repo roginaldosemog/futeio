@@ -445,7 +445,7 @@
   },
   "info": {
     "contact": {},
-    "description": "Closed-group football organization. Administrator access is available in E2.",
+    "description": "Private football group: player access, profiles, current evaluations and recorded team draws.",
     "title": "Futeio API",
     "version": "0.1.0"
   },

@@ -1,16 +1,31 @@
+import Link from "next/link";
+import { formatRating } from "@/lib/format";
 import type { PlayerSummary } from "./players-client";
 
 export function PlayerList({ players }: { players: PlayerSummary[] }) {
-  if (!players.length) return <p className="text-base leading-relaxed text-[#3c5b4b]">Nenhum jogador cadastrado ainda.</p>;
+  if (!players.length)
+    return (
+      <p className="text-base leading-relaxed text-[#3c5b4b]">Nenhum jogador cadastrado ainda.</p>
+    );
   return (
-    <ul aria-label="Jogadores cadastrados" className="divide-y divide-[#d6e2db] border-y border-[#d6e2db]">
+    <ul
+      aria-label="Jogadores cadastrados"
+      className="divide-y divide-[#d6e2db] border-y border-[#d6e2db]"
+    >
       {players.map((player) => (
         <li className="flex min-h-20 items-center justify-between gap-5 py-4" key={player.id}>
           <div className="min-w-0">
-            <p className="font-semibold break-words [overflow-wrap:anywhere]">{player.name}</p>
+            <Link
+              href={`/jogadores/${player.id}`}
+              className="inline-flex min-h-12 items-center font-semibold break-words underline underline-offset-4 [overflow-wrap:anywhere]"
+            >
+              {player.name}
+            </Link>
             {player.isOwnProfile ? <p className="mt-1 text-sm text-[#3c5b4b]">Seu perfil</p> : null}
           </div>
-          <p className="shrink-0 text-sm font-semibold text-[#3c5b4b] tabular-nums">Nota: {player.rating}</p>
+          <p className="shrink-0 text-sm font-semibold text-[#3c5b4b] tabular-nums">
+            Nota: {formatRating(player.rating)}
+          </p>
         </li>
       ))}
     </ul>

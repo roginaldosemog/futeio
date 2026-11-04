@@ -4,8 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Futeio | Futebol com a sua turma",
-  description:
-    "O Futeio está em construção. Estamos preparando a primeira versão para ajudar na organização da pelada da turma.",
+  description: "Organize as avaliações da turma e forme quatro times equilibrados para a pelada.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

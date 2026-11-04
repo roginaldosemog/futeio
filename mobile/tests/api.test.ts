@@ -64,6 +64,19 @@ it('ignores an old 401 after a replacement session has been installed', async ()
   expect(client.onUnauthorized).not.toHaveBeenCalled();
 });
 
+it('does not suppress a valid 401 merely because quiet validation restored the same credential', async () => {
+  let resolve!: (value: Response) => void;
+  const fetchMock = fetcher().mockReturnValue(new Promise(done => { resolve = done; }));
+  const client = new NativeApiClient(() => 'https://api.example.test/api/v1', fetchMock);
+  client.setToken('same-session');
+  client.onUnauthorized = jest.fn();
+  const pending = client.request('players');
+  client.setToken('same-session');
+  resolve(response({}, 401));
+  await expect(pending).rejects.toEqual(new AccessError(401));
+  expect(client.onUnauthorized).toHaveBeenCalledTimes(1);
+});
+
 it('cancels the native request when the caller aborts', async () => {
   const fetchMock = fetcher().mockImplementation(async (_url, options) => new Promise((_resolve, reject) => {
     options?.signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
@@ -94,4 +107,48 @@ it.each(['https://attacker.test', '/players', '../players', 'players?url=https:/
   const client = new NativeApiClient(() => 'https://api.example.test/api/v1', fetchMock);
   await expect(client.request(path)).rejects.toThrow('Caminho de API inválido.');
   expect(fetchMock).not.toHaveBeenCalled();
+});
+
+const photoPath = '/api/v1/players/00000000-0000-4000-8000-000000000001/photo';
+const jpeg = (bytes = new Uint8Array([255, 216, 255]), mime = 'image/jpeg', length?: string) => ({
+  ok: true, status: 200,
+  headers: { get: (key: string) => key === 'content-type' ? mime : key === 'content-length' ? length ?? null : null },
+  arrayBuffer: async () => bytes.buffer,
+}) as unknown as Response;
+
+it.each([
+  `https://other.example${photoPath}`, `https://user:password@api.example.test${photoPath}`,
+  '/api/v1/players/other/photo', '/api/v1/auth/me', `${photoPath}?token=bad`, `${photoPath}#secret`,
+])('rejects an untrusted private photo without sending credentials: %s', async value => {
+  const fetchMock = fetcher();
+  const client = new NativeApiClient(() => 'https://api.example.test/api/v1', fetchMock);
+  client.setToken('photo-session');
+  await expect(client.privatePhoto(value)).rejects.toThrow('Endereço de foto inválido.');
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it('returns only an in-memory image and keeps the strict bearer/redirect policy for private photos', async () => {
+  const fetchMock = fetcher().mockResolvedValue(jpeg());
+  const client = new NativeApiClient(() => 'https://api.example.test/api/v1', fetchMock);
+  client.setToken('photo-session');
+  expect(await client.privatePhoto(photoPath)).toBe('data:image/jpeg;base64,/9j/');
+  expect(fetchMock).toHaveBeenCalledWith(`https://api.example.test${photoPath}`, expect.objectContaining({
+    credentials: 'omit', redirect: 'error', headers: { Accept: 'image/jpeg', Authorization: 'Bearer photo-session' },
+  }));
+});
+
+it('rejects non-JPEG private responses before consuming the body', async () => {
+  const result = jpeg(undefined, 'text/html');
+  result.arrayBuffer = jest.fn();
+  const client = new NativeApiClient(() => 'https://api.example.test/api/v1', fetcher().mockResolvedValue(result));
+  await expect(client.privatePhoto(photoPath)).rejects.toEqual(new AccessError(502));
+  expect(result.arrayBuffer).not.toHaveBeenCalled();
+});
+
+it('bounds private photo sizes both with and without Content-Length', async () => {
+  const fetchMock = fetcher().mockResolvedValueOnce(jpeg(undefined, 'image/jpeg', '2097153'))
+    .mockResolvedValueOnce(jpeg(new Uint8Array(2 * 1024 * 1024 + 1)));
+  const client = new NativeApiClient(() => 'https://api.example.test/api/v1', fetchMock);
+  await expect(client.privatePhoto(photoPath)).rejects.toEqual(new AccessError(502));
+  await expect(client.privatePhoto(photoPath)).rejects.toEqual(new AccessError(502));
 });

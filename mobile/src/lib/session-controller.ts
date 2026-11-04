@@ -40,9 +40,14 @@ export class SessionController {
     return task;
   }
 
-  async initialize(): Promise<void> {
+  async initialize(quiet = false): Promise<void> {
     const revision = ++this.revision;
-    this.update({ status: 'loading', session: null, error: null });
+    const previous = this.state.session;
+    if (!quiet) {
+      this.api.setToken(null);
+      this.clearPrivateData();
+      this.update({ status: 'loading', session: null, error: null });
+    }
     try {
       if (this.mustRemove) {
         await this.write(() => this.store.remove());
@@ -51,12 +56,17 @@ export class SessionController {
       }
       const token = await this.store.read();
       if (revision !== this.revision) return;
-      if (!token) { this.update({ status: 'anonymous', session: null, error: null }); return; }
+      if (!token) { this.api.setToken(null); this.clearPrivateData(); this.update({ status: 'anonymous', session: null, error: null }); return; }
       if (!/^[A-Za-z0-9_-]{43}$/.test(token)) { await this.expire(); return; }
       this.api.setToken(token);
       const session = await this.api.request<Session>('auth/me');
       if (!validSession(session)) throw new Error('Sessão inválida.');
-      if (revision === this.revision) this.update({ status: 'authenticated', session, error: null });
+      if (revision !== this.revision) return;
+      if (quiet && previous && (previous.identityId !== session.identityId || previous.groupId !== session.groupId || previous.role !== session.role)) {
+        await this.expire();
+        return;
+      }
+      this.update({ status: 'authenticated', session, error: null });
     } catch {
       if (revision === this.revision) {
         this.api.setToken(null);
@@ -65,6 +75,10 @@ export class SessionController {
       }
     }
   }
+
+  // Returning from the native photo picker/share sheet must validate access
+  // without unmounting a form that still owns an in-flight native operation.
+  revalidate(): Promise<void> { return this.initialize(true); }
 
   signIn = (email: string, password: string): Promise<void> => this.authenticate('auth/native/admin/login', { email: email.trim(), password });
 
@@ -124,6 +138,7 @@ export class SessionController {
     this.api.setToken(null);
     this.clearPrivateData();
     this.mustRemove = true;
+    this.update({ status: 'loading', session: null, error: null });
     try {
       await this.write(() => this.store.remove());
       if (revision !== this.revision) return;

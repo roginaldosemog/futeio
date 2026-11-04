@@ -16,9 +16,6 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
 
-overrides:
-  typescript@<6: 5.9.3
-
 minimumReleaseAgeExclude:
   - '@next/env@16.4.4'
   - '@next/eslint-plugin-next@16.4.4'

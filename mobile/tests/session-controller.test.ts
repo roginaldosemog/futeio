@@ -176,3 +176,41 @@ it('rejects invalid stored credentials without contacting the API', async () => 
   expect(fixture.fetchMock).not.toHaveBeenCalled();
   expect(fixture.controller.getSnapshot().status).toBe('anonymous');
 });
+
+it('revalidates quietly while a native picker is open without unmounting authenticated content', async () => {
+  const fixture = setup(token);
+  fixture.fetchMock.mockResolvedValueOnce(response(session));
+  await fixture.controller.initialize();
+  let complete!: (value: Response) => void;
+  fixture.fetchMock.mockReturnValueOnce(new Promise(done => { complete = done; }));
+  const validation = fixture.controller.revalidate();
+  await waitFor(() => expect(fixture.fetchMock).toHaveBeenCalledTimes(2));
+  expect(fixture.controller.getSnapshot()).toEqual({ status: 'authenticated', session, error: null });
+  complete(response(session));
+  await validation;
+  expect(fixture.controller.getSnapshot().status).toBe('authenticated');
+});
+
+it('hides revoked content before asynchronous secure storage removal finishes', async () => {
+  const fixture = setup(token);
+  fixture.fetchMock.mockResolvedValueOnce(response(session));
+  await fixture.controller.initialize();
+  let remove!: () => void;
+  fixture.store.remove.mockImplementationOnce(() => new Promise(done => { remove = done; }));
+  fixture.fetchMock.mockResolvedValueOnce(response({}, 401));
+  await fixture.controller.revalidate();
+  await waitFor(() => expect(fixture.store.remove).toHaveBeenCalled());
+  expect(fixture.controller.getSnapshot()).toEqual({ status: 'loading', session: null, error: null });
+  remove();
+  await waitFor(() => expect(fixture.controller.getSnapshot().status).toBe('anonymous'));
+});
+
+it('fails closed on an unexpected identity change during quiet validation', async () => {
+  const fixture = setup(token);
+  fixture.fetchMock.mockResolvedValueOnce(response(session));
+  await fixture.controller.initialize();
+  fixture.fetchMock.mockResolvedValueOnce(response({ ...session, identityId: 'different-identity' }));
+  await fixture.controller.revalidate();
+  expect(fixture.controller.getSnapshot().status).toBe('anonymous');
+  expect(fixture.readStored()).toBeNull();
+});

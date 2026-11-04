@@ -160,7 +160,9 @@ describe('Administrator password access', () => {
     const identity = await prisma.identity.create({ data: { memberships: { create: { groupId: '00000000-0000-4000-8000-000000000001', role: 'PLAYER' } } } });
     const token = newSecret();
     try {
-      await prisma.accessSession.create({ data: { tokenHash: secretHash(token), role: 'PLAYER', groupId: '00000000-0000-4000-8000-000000000001', identityId: identity.id, expiresAt: new Date(clock.value + 60000) } });
+      const player = await prisma.player.create({ data: { groupId: '00000000-0000-4000-8000-000000000001', identityId: identity.id, name: 'Guard fixture' } });
+      const credential = await prisma.playerAccessCredential.create({ data: { groupId: player.groupId, playerId: player.id, tokenHash: secretHash(newSecret()) } });
+      await prisma.accessSession.create({ data: { tokenHash: secretHash(token), role: 'PLAYER', groupId: player.groupId, identityId: identity.id, playerCredentialId: credential.id, expiresAt: new Date(clock.value + 60000) } });
       await request(app.getHttpServer()).get('/api/v1/test-admin').set('Cookie', `futeio_session=${token}`).expect(403);
     } finally { await prisma.identity.delete({ where: { id: identity.id } }); }
   });

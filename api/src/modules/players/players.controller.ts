@@ -3,6 +3,7 @@ import { ApiBadRequestResponse, ApiConflictResponse, ApiCookieAuth, ApiCreatedRe
 import type { AccessRequest } from '../access/access-context';
 import { AdminGuard } from '../access/admin.guard';
 import { CsrfGuard } from '../access/csrf.guard';
+import { MemberGuard } from '../access/member.guard';
 import { CreatePlayerService } from './create-player.service';
 import { CreatePlayerDto, CreatePlayerResponseDto, PlayerSummaryDto } from './players.dto';
 
@@ -11,12 +12,12 @@ import { CreatePlayerDto, CreatePlayerResponseDto, PlayerSummaryDto } from './pl
 @ApiUnauthorizedResponse()
 @ApiForbiddenResponse()
 @Controller('players')
-@UseGuards(AdminGuard)
+@UseGuards(MemberGuard)
 export class PlayersController {
   constructor(private readonly players: CreatePlayerService) {}
 
   @Post()
-  @UseGuards(CsrfGuard)
+  @UseGuards(AdminGuard, CsrfGuard)
   @ApiHeader({ name: 'x-csrf-token', required: true })
   @ApiCreatedResponse({ type: CreatePlayerResponseDto })
   @ApiBadRequestResponse()

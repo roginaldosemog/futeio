@@ -11,6 +11,7 @@ let prisma;
 let stopping = false;
 let ownsFixtureNamespace = false;
 const createdPlayerIds = new Set();
+const createdDrawIds = new Set();
 
 async function stop(exitCode) {
   if (stopping) return;
@@ -23,6 +24,7 @@ async function stop(exitCode) {
       const players = await transaction.player.findMany({
         where: { id: { in: [...createdPlayerIds] } }, select: { id: true, identityId: true },
       });
+      await transaction.draw.deleteMany({ where: { id: { in: [...createdDrawIds] } } });
       await transaction.player.deleteMany({ where: { id: { in: players.map((player) => player.id) } } });
       const identities = players.map((player) => player.identityId).filter((id) => id !== administrator?.id);
       await transaction.identity.deleteMany({ where: { id: { in: identities }, email: null } });
@@ -72,6 +74,13 @@ try {
       const json = response.json;
       response.json = function (body) {
         if (this.statusCode === 201 && typeof body?.player?.id === 'string') createdPlayerIds.add(body.player.id);
+        return json.call(this, body);
+      };
+    }
+    if (request.method === 'POST' && request.path === '/api/v1/draws') {
+      const json = response.json;
+      response.json = function (body) {
+        if (this.statusCode === 201 && typeof body?.id === 'string') createdDrawIds.add(body.id);
         return json.call(this, body);
       };
     }

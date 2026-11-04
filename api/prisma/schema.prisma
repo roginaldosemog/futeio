@@ -14,6 +14,7 @@ model Group {
   name      String
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   memberships Membership[]
+  draws Draw[]
 
   @@map("groups")
 }
@@ -62,11 +63,14 @@ model AccessSession {
   expiresAt   DateTime      @map("expires_at") @db.Timestamptz(3)
   revokedAt   DateTime?     @map("revoked_at") @db.Timestamptz(3)
   credentialVersion String? @map("credential_version") @db.Char(64)
+  playerCredentialId String? @map("player_credential_id") @db.Uuid
+  playerCredential PlayerAccessCredential? @relation(fields: [playerCredentialId], references: [id], onDelete: Cascade)
   createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   membership  Membership?   @relation(fields: [groupId, identityId], references: [groupId, identityId], onDelete: Cascade)
   loginLinks  AdminLoginLink[]
 
   @@index([expiresAt])
+  @@index([playerCredentialId])
   @@map("access_sessions")
 }
 
@@ -101,6 +105,7 @@ model Player {
   groupId    String     @map("group_id") @db.Uuid
   identityId String     @map("identity_id") @db.Uuid
   name       String     @db.VarChar(100)
+  photoBytes Bytes?     @map("photo_bytes")
   createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   membership Membership @relation(fields: [groupId, identityId], references: [groupId, identityId], onDelete: Cascade)
   evaluations Evaluation[]
@@ -134,7 +139,23 @@ model PlayerAccessCredential {
   revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   player    Player @relation(fields: [groupId, playerId], references: [groupId, id], onDelete: Cascade)
+  sessions AccessSession[]
 
   @@index([groupId, playerId])
   @@map("player_access_credentials")
+}
+
+model Draw {
+  id                 String   @id @default(uuid()) @db.Uuid
+  groupId            String   @map("group_id") @db.Uuid
+  createdBy          String   @map("created_by") @db.Uuid
+  seed               String   @db.VarChar(64)
+  algorithmVersion   String   @map("algorithm_version") @db.VarChar(64)
+  calculationVersion String   @map("calculation_version") @db.VarChar(64)
+  snapshot           Json
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  group              Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt])
+  @@map("draws")
 }

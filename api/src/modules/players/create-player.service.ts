@@ -4,6 +4,7 @@ import { Prisma } from '../../generated/prisma/client';
 import type { AccessContext } from '../access/access-context';
 import { PlayerCredentialService } from '../access/player-credential.service';
 import { InitialRatingService } from '../evaluations/initial-rating.service';
+import { calculateRating } from '../evaluations/calculate-rating';
 import type { CreatePlayerDto, CreatePlayerResponseDto, PlayerSummaryDto } from './players.dto';
 
 @Injectable()
@@ -33,12 +34,14 @@ export class CreatePlayerService {
     const players = await this.prisma.player.findMany({
       where: { groupId: access.groupId },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-      select: { id: true, name: true, identityId: true, evaluations: { orderBy: { createdAt: 'asc' }, take: 1, select: { rating: true } } },
+      select: { id: true, name: true, identityId: true, evaluations: { select: { rating: true, evaluatorIdentityId: true } }, photoBytes: true },
     });
     return players.map((player) => {
-      const initial = player.evaluations[0];
-      if (!initial) throw new Error('The player initial contribution is unavailable.');
-      return { id: player.id, name: player.name, rating: initial.rating, isOwnProfile: player.identityId === access.identityId };
+      return { id: player.id, name: player.name, rating: calculateRating(player.evaluations.map((evaluation) => evaluation.rating)), isOwnProfile: player.identityId === access.identityId,
+        myRating: player.evaluations.find((evaluation) => evaluation.evaluatorIdentityId === access.identityId)?.rating ?? null,
+        evaluationCount: player.evaluations.length,
+        ...(player.photoBytes ? { photoUrl: `/api/v1/players/${player.id}/photo` } : {}),
+      };
     });
   }
 }

@@ -9,17 +9,20 @@ import { CsrfGuard } from './csrf.guard';
 import { AdminGuard } from './admin.guard';
 import { AuthRateLimiter } from './rate-limit.service';
 import { PlayerCredentialService } from './player-credential.service';
+import { MemberGuard } from './member.guard';
+import { PlayerAccessService } from './player-access.service';
+import { PlayerAccessController } from './player-access.controller';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [AccessController],
+  controllers: [AccessController, PlayerAccessController],
   providers: [
     { provide: AUTH_CONFIGURATION, useFactory: () => loadAuthConfiguration(process.env) },
     { provide: AUTH_CLOCK, useClass: SystemClock },
-    // Email delivery is deferred. Do not register Resend or expose link endpoints
+    // Email delivery is deferred. Do not register Resend or expose administrator link endpoints
     // until the administrator explicitly resumes and validates that delivery.
-    SessionService, AdminLoginService, CsrfGuard, AdminGuard, AuthRateLimiter, PlayerCredentialService,
+    SessionService, AdminLoginService, CsrfGuard, AdminGuard, MemberGuard, AuthRateLimiter, PlayerCredentialService, PlayerAccessService,
   ],
-  exports: [SessionService, AdminGuard, CsrfGuard, PlayerCredentialService, AUTH_CONFIGURATION],
+  exports: [SessionService, AdminGuard, MemberGuard, CsrfGuard, PlayerCredentialService, AuthRateLimiter, AUTH_CONFIGURATION],
 })
 export class AccessModule {}

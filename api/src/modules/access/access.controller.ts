@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, HttpCode, HttpException, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, HttpCode, HttpException, Inject, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiBadRequestResponse, ApiCookieAuth, ApiForbiddenResponse, ApiHeader, ApiOkResponse, ApiTags, ApiTooManyRequestsResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { AUTH_CONFIGURATION, type AuthConfiguration } from './auth-configuration';
@@ -8,7 +8,7 @@ import { AdminLoginService } from './admin-login.service';
 import { AuthRateLimiter } from './rate-limit.service';
 import { CsrfGuard } from './csrf.guard';
 import { AdminPasswordLoginDto, CsrfResponseDto, MessageResponseDto, SessionResponseDto } from './access.dto';
-import type { AccessRequest } from './access-context';
+import type { AccessRequest, BrowserContext } from './access-context';
 
 @ApiTags('Access')
 @Controller('auth')
@@ -20,8 +20,21 @@ export class AccessController {
   @ApiTooManyRequestsResponse()
   async csrf(@Req() request: AccessRequest, @Res({ passthrough: true }) response: Response): Promise<CsrfResponseDto> {
     if (request.get('sec-fetch-site') === 'cross-site') throw new ForbiddenException();
-    await this.limiter.peer(request, response, 'csrf', 60);
-    const browser = await this.sessions.getBrowser(request, response);
+    let browser: BrowserContext | undefined;
+    try { browser = await this.sessions.requireBrowser(request); }
+    catch (error) { if (!(error instanceof UnauthorizedException)) throw error; }
+    if (browser && browser.session.role !== 'ANONYMOUS') {
+      // Authenticated members behind Next share a network peer. A session
+      // budget prevents one member's normal voting from blocking the group.
+      if (!await this.limiter.within('csrf-session', browser.session.id, 60)) {
+        response.setHeader('Retry-After', '900');
+        throw new HttpException('Too many requests.', 429);
+      }
+    } else {
+      // Keep the peer bound before creating any anonymous context.
+      await this.limiter.peer(request, response, 'csrf', 60);
+      browser = await this.sessions.getBrowser(request, response);
+    }
     return { csrfToken: csrfFor(browser.token, this.configuration.secret) };
   }
 

@@ -27,10 +27,16 @@ export class PlayerSummaryDto {
   id!: string;
   @ApiProperty()
   name!: string;
-  @ApiProperty({ minimum: 0, maximum: 10, description: 'Initial contribution in E3; consolidated rating is introduced in E6.' })
+  @ApiProperty({ minimum: 0, maximum: 10, description: 'Consolidated rating without presentation rounding.' })
   rating!: number;
   @ApiProperty()
   isOwnProfile!: boolean;
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  myRating?: number | null;
+  @ApiPropertyOptional({ type: 'integer', minimum: 1 })
+  evaluationCount?: number;
+  @ApiPropertyOptional()
+  photoUrl?: string;
 }
 
 export class CreatePlayerResponseDto {

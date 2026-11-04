@@ -130,10 +130,10 @@ describe('Player registration', () => {
     expect(stored.credentials[0]!.tokenHash).toBe(secretHash(token));
     expect(JSON.stringify(stored)).not.toContain(token);
     const listed = await agent.get('/api/v1/players').expect(200);
-    expect(listed.body).toEqual([response.body.player]);
+    expect(listed.body).toEqual([{ ...response.body.player, myRating: 7, evaluationCount: 1 }]);
     expect(JSON.stringify(listed.body)).not.toContain(token);
     expect(JSON.stringify(listed.body)).not.toContain(stored.credentials[0]!.tokenHash);
-    expect(Object.keys(listed.body[0] as object).sort()).toEqual(['id', 'isOwnProfile', 'name', 'rating']);
+    expect(Object.keys(listed.body[0] as object).sort()).toEqual(['evaluationCount', 'id', 'isOwnProfile', 'myRating', 'name', 'rating']);
   });
   it.each([0, 10])('accepts boundary initial rating %i', async (initialRating) => {
     const response = await create({ name, initialRating });
@@ -182,17 +182,20 @@ describe('Player registration', () => {
     const player = await prisma.player.findUniqueOrThrow({ where: { groupId_identityId: { groupId: PILOT_GROUP_ID, identityId: adminId } }, include: { evaluations: true, credentials: true } });
     expect(player.evaluations).toHaveLength(1); expect(player.credentials).toHaveLength(1);
   });
-  it('requires an authenticated administrator for list and creation', async () => {
+  it('requires membership to list and an administrator to create', async () => {
     await request(app.getHttpServer()).get('/api/v1/players').expect(401);
     await request(app.getHttpServer()).post('/api/v1/players').send({ name, initialRating: 7 }).expect(401);
   });
-  it('denies a player session even with a valid CSRF header', async () => {
+  it('allows a player to list but denies creation even with a valid CSRF header', async () => {
     const identity = await prisma.identity.create({ data: { memberships: { create: { groupId: PILOT_GROUP_ID, role: 'PLAYER' } } } });
     const token = newSecret();
     try {
-      await prisma.accessSession.create({ data: { tokenHash: secretHash(token), groupId: PILOT_GROUP_ID, identityId: identity.id, role: 'PLAYER', expiresAt: new Date(clock.value + 60000) } });
+      const player = await prisma.player.create({ data: { groupId: PILOT_GROUP_ID, identityId: identity.id, name: 'Valid linked fixture' } });
+      await prisma.evaluation.create({ data: { groupId: PILOT_GROUP_ID, playerId: player.id, evaluatorIdentityId: adminId, rating: 5 } });
+      const credential = await prisma.playerAccessCredential.create({ data: { groupId: PILOT_GROUP_ID, playerId: player.id, tokenHash: secretHash(newSecret()) } });
+      await prisma.accessSession.create({ data: { tokenHash: secretHash(token), groupId: PILOT_GROUP_ID, identityId: identity.id, role: 'PLAYER', playerCredentialId: credential.id, expiresAt: new Date(clock.value + 60000) } });
       const cookie = `futeio_session=${token}`;
-      await request(app.getHttpServer()).get('/api/v1/players').set('Cookie', cookie).expect(403);
+      await request(app.getHttpServer()).get('/api/v1/players').set('Cookie', cookie).expect(200);
       await request(app.getHttpServer()).post('/api/v1/players').set('Cookie', cookie).set('Origin', configuration.origin).set('x-csrf-token', csrfFor(token, configuration.secret)).send({ name, initialRating: 7 }).expect(403);
     } finally { await prisma.identity.delete({ where: { id: identity.id } }); }
   });

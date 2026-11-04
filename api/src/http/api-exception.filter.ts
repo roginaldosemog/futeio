@@ -8,7 +8,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
-    const statusCode = exception instanceof HttpException ? exception.getStatus() : 500;
+    const oversizedBody = typeof exception === 'object' && exception !== null
+      && 'type' in exception && exception.type === 'entity.too.large';
+    const statusCode = exception instanceof HttpException ? exception.getStatus() : oversizedBody ? 413 : 500;
     const requestId = response.locals.requestId as string;
 
     let code = statusCode >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_REJECTED';

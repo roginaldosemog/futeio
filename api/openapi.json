@@ -22,6 +22,29 @@
         ],
         "type": "object"
       },
+      "CreateDrawDto": {
+        "properties": {
+          "playerIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 20,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "seed": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "playerIds"
+        ],
+        "type": "object"
+      },
       "CreatePlayerDto": {
         "properties": {
           "initialRating": {
@@ -76,6 +99,134 @@
         ],
         "type": "object"
       },
+      "DrawDto": {
+        "properties": {
+          "algorithmVersion": {
+            "type": "string"
+          },
+          "calculationVersion": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "seed": {
+            "type": "string"
+          },
+          "spread": {
+            "type": "number"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/DrawTeamDto"
+            },
+            "type": "array"
+          },
+          "variance": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "seed",
+          "algorithmVersion",
+          "calculationVersion",
+          "teams",
+          "spread",
+          "variance"
+        ],
+        "type": "object"
+      },
+      "DrawPlayerDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rating": {
+            "maximum": 10,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "rating"
+        ],
+        "type": "object"
+      },
+      "DrawTeamDto": {
+        "properties": {
+          "average": {
+            "type": "number"
+          },
+          "number": {
+            "maximum": 4,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/DrawPlayerDto"
+            },
+            "type": "array"
+          },
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "number",
+          "players",
+          "total",
+          "average"
+        ],
+        "type": "object"
+      },
+      "EvaluatePlayerDto": {
+        "properties": {
+          "rating": {
+            "maximum": 10,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rating"
+        ],
+        "type": "object"
+      },
+      "EvaluationRowDto": {
+        "properties": {
+          "authorName": {
+            "description": "Only the administrator or the author receives the author name.",
+            "type": "string"
+          },
+          "isOwn": {
+            "type": "boolean"
+          },
+          "rating": {
+            "maximum": 10,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rating",
+          "isOwn"
+        ],
+        "type": "object"
+      },
       "MessageResponseDto": {
         "properties": {
           "message": {
@@ -87,8 +238,61 @@
         ],
         "type": "object"
       },
-      "PlayerSummaryDto": {
+      "PlayerAccessLinkDto": {
         "properties": {
+          "accessUrl": {
+            "description": "Personal access credential returned once; previous links and sessions are revoked.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessUrl"
+        ],
+        "type": "object"
+      },
+      "PlayerEvaluationsDto": {
+        "properties": {
+          "calculationVersion": {
+            "type": "string"
+          },
+          "discardedPerSide": {
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "type": "integer"
+          },
+          "evaluationCount": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "evaluations": {
+            "items": {
+              "$ref": "#/components/schemas/EvaluationRowDto"
+            },
+            "type": "array"
+          },
+          "rating": {
+            "maximum": 10,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "evaluations",
+          "rating",
+          "evaluationCount",
+          "discardedPerSide",
+          "calculationVersion"
+        ],
+        "type": "object"
+      },
+      "PlayerProfileDto": {
+        "properties": {
+          "canEdit": {
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "type": "string"
@@ -99,8 +303,50 @@
           "name": {
             "type": "string"
           },
+          "photoUrl": {
+            "description": "Private photo endpoint; requires an active group session.",
+            "type": "string"
+          },
           "rating": {
-            "description": "Initial contribution in E3; consolidated rating is introduced in E6.",
+            "maximum": 10,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "rating",
+          "isOwnProfile",
+          "canEdit"
+        ],
+        "type": "object"
+      },
+      "PlayerSummaryDto": {
+        "properties": {
+          "evaluationCount": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "isOwnProfile": {
+            "type": "boolean"
+          },
+          "myRating": {
+            "nullable": true,
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "photoUrl": {
+            "type": "string"
+          },
+          "rating": {
+            "description": "Consolidated rating without presentation rounding.",
             "maximum": 10,
             "minimum": 0,
             "type": "number"
@@ -111,6 +357,20 @@
           "name",
           "rating",
           "isOwnProfile"
+        ],
+        "type": "object"
+      },
+      "RedeemPlayerLinkDto": {
+        "properties": {
+          "token": {
+            "maxLength": 43,
+            "minLength": 43,
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "token"
         ],
         "type": "object"
       },
@@ -144,6 +404,33 @@
           "role",
           "identityId",
           "groupId"
+        ],
+        "type": "object"
+      },
+      "UpdatePlayerProfileDto": {
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "UploadPlayerPhotoDto": {
+        "properties": {
+          "data": {
+            "description": "Base64 JPEG or PNG bytes, at most 2 MiB decoded. No data URL prefix.",
+            "maxLength": 2796204,
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "data"
         ],
         "type": "object"
       }
@@ -310,6 +597,197 @@
         ]
       }
     },
+    "/api/v1/auth/player/redeem": {
+      "post": {
+        "operationId": "PlayerAccessController_redeem",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-csrf-token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedeemPlayerLinkDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "429": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Access"
+        ]
+      }
+    },
+    "/api/v1/draws": {
+      "get": {
+        "operationId": "DrawsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DrawDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Draws"
+        ]
+      },
+      "post": {
+        "operationId": "DrawsController_create",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-csrf-token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDrawDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DrawDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Draws"
+        ]
+      }
+    },
+    "/api/v1/draws/{id}": {
+      "get": {
+        "operationId": "DrawsController_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DrawDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Draws"
+        ]
+      }
+    },
     "/api/v1/health/live": {
       "get": {
         "operationId": "HealthController_liveness",
@@ -425,6 +903,493 @@
         ],
         "tags": [
           "Players"
+        ]
+      }
+    },
+    "/api/v1/players/{id}": {
+      "get": {
+        "operationId": "PlayerProfileController_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerProfileDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Players"
+        ]
+      }
+    },
+    "/api/v1/players/{id}/access-link": {
+      "delete": {
+        "operationId": "PlayerAccessController_revoke",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-csrf-token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Access"
+        ]
+      }
+    },
+    "/api/v1/players/{id}/access-link/rotate": {
+      "post": {
+        "operationId": "PlayerAccessController_rotate",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-csrf-token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerAccessLinkDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Access"
+        ]
+      }
+    },
+    "/api/v1/players/{id}/photo": {
+      "delete": {
+        "operationId": "PlayerProfileController_removePhoto",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-csrf-token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerProfileDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Players"
+        ]
+      },
+      "get": {
+        "operationId": "PlayerProfileController_photo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Players"
+        ]
+      },
+      "post": {
+        "operationId": "PlayerProfileController_upload",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-csrf-token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadPlayerPhotoDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerProfileDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "429": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Players"
+        ]
+      }
+    },
+    "/api/v1/players/{id}/profile": {
+      "post": {
+        "operationId": "PlayerProfileController_rename",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-csrf-token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlayerProfileDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerProfileDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Players"
+        ]
+      }
+    },
+    "/api/v1/players/{playerId}/evaluations": {
+      "get": {
+        "operationId": "EvaluationsController_table",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "playerId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerEvaluationsDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Evaluations"
+        ]
+      },
+      "post": {
+        "operationId": "EvaluationsController_evaluate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "playerId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-csrf-token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluatePlayerDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerEvaluationsDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "tags": [
+          "Evaluations"
         ]
       }
     }

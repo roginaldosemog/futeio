@@ -8,6 +8,7 @@ import { PILOT_GROUP_ID, SESSION_TTL_MS } from './auth-policy';
 import { SessionService } from './session.service';
 import { verifyPassword } from './password';
 import type { BrowserContext } from './access-context';
+import { SESSION_INCLUDE } from './access-context';
 import type { SessionResponseDto } from './access.dto';
 
 @Injectable()
@@ -29,7 +30,7 @@ export class AdminLoginService {
         tokenHash: secretHash(token), role: 'ADMIN', identityId: identity.id, groupId: PILOT_GROUP_ID,
         credentialVersion: credentialVersion(this.configuration),
         expiresAt: new Date(now.getTime() + SESSION_TTL_MS), createdAt: now,
-      }, include: { membership: { include: { identity: true } } } });
+      }, include: SESSION_INCLUDE });
     });
     this.sessions.setCookie(response, token, created);
     return this.sessions.view({ token, session: created });

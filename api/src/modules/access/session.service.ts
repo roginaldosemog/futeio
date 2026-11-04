@@ -7,6 +7,7 @@ import { AUTH_CLOCK, type Clock } from './clock';
 import { ANONYMOUS_TTL_MS, PILOT_GROUP_ID } from './auth-policy';
 import { newSecret, readSessionCookie, secretHash, SESSION_COOKIE } from './auth-secrets';
 import type { AccessContext, BrowserContext } from './access-context';
+import { SESSION_INCLUDE } from './access-context';
 import type { SessionResponseDto } from './access.dto';
 
 @Injectable()
@@ -14,12 +15,16 @@ export class SessionService {
   constructor(private readonly prisma: PrismaService, @Inject(AUTH_CONFIGURATION) private readonly configuration: AuthConfiguration, @Inject(AUTH_CLOCK) private readonly clock: Clock) {}
 
   async fromToken(token: string): Promise<BrowserContext> {
-    const session = await this.prisma.accessSession.findUnique({ where: { tokenHash: secretHash(token) }, include: { membership: { include: { identity: true } } } });
+    const session = await this.prisma.accessSession.findUnique({ where: { tokenHash: secretHash(token) }, include: SESSION_INCLUDE });
     const now = this.clock.now();
     if (!session || session.revokedAt || session.expiresAt <= now) throw new UnauthorizedException();
     if (session.role !== 'ANONYMOUS') {
       const member = session.membership;
       if (!member || session.groupId !== PILOT_GROUP_ID || (session.role === 'ADMIN' && (member.role !== 'ADMIN' || member.identity.email !== this.configuration.adminEmail || session.credentialVersion !== credentialVersion(this.configuration)))) throw new UnauthorizedException();
+      if (session.role === 'PLAYER') {
+        const credential = session.playerCredential;
+        if (!credential || credential.revokedAt || credential.groupId !== session.groupId || credential.player.identityId !== session.identityId || credential.player.id !== member.player?.id) throw new UnauthorizedException();
+      }
     }
     return { session, token };
   }
@@ -39,7 +44,7 @@ export class SessionService {
     // Expired hashes have no product history value; this bounds anonymous context retention.
     await this.prisma.accessSession.deleteMany({ where: { expiresAt: { lt: new Date(now.getTime() - 24 * 60 * 60 * 1000) } } });
     const freshToken = newSecret();
-    const session = await this.prisma.accessSession.create({ data: { tokenHash: secretHash(freshToken), role: 'ANONYMOUS', createdAt: now, expiresAt: new Date(now.getTime() + ANONYMOUS_TTL_MS) }, include: { membership: { include: { identity: true } } } });
+    const session = await this.prisma.accessSession.create({ data: { tokenHash: secretHash(freshToken), role: 'ANONYMOUS', createdAt: now, expiresAt: new Date(now.getTime() + ANONYMOUS_TTL_MS) }, include: SESSION_INCLUDE });
     this.setCookie(response, freshToken, session);
     return { token: freshToken, session };
   }
@@ -52,7 +57,8 @@ export class SessionService {
 
   view(context: BrowserContext): SessionResponseDto {
     const access = this.authenticated(context);
-    return { role: access.role, identityId: access.identityId, groupId: access.groupId, ...(access.role === 'ADMIN' ? { email: context.session.membership!.identity.email! } : {}) };
+    const playerId = context.session.membership?.player?.id;
+    return { role: access.role, identityId: access.identityId, groupId: access.groupId, ...(playerId ? { playerId } : {}), ...(access.role === 'ADMIN' ? { email: context.session.membership!.identity.email! } : {}) };
   }
 
   setCookie(response: Response, token: string, session: Pick<AccessSession, 'expiresAt'>): void {

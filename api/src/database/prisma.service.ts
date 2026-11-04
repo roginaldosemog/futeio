@@ -11,7 +11,9 @@ export class PrismaService extends PrismaClient implements OnModuleDestroy {
     super({
       adapter: new PrismaPg({
         connectionString: configuration.databaseUrl,
-        connectionTimeoutMillis: 1000,
+        // A cold TLS/OS connection needs more headroom than an established
+        // query. Keep the query deadline independent and bounded below.
+        connectionTimeoutMillis: 5000,
         query_timeout: 1000,
         max: 5,
       }),

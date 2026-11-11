@@ -1,6 +1,6 @@
 # Máquinas de estado
 
-Atualizado em 10/11/2026.
+Atualizado em 11/11/2026.
 
 Este documento lista todas as máquinas de estado do Futeio (web, mobile e API), diz quais estão explícitas no código e explica como escrever ou alterar uma. Serve a quem desenvolve e a agentes: antes de mexer em um fluxo de acesso, de link pessoal ou de escrita que não pode repetir, comece pela linha correspondente do catálogo.
 
@@ -92,14 +92,14 @@ Diferenças entre os clientes, ambas intencionais: no mobile, `hide` e `conceal`
 
 ### Escritas que não podem repetir
 
-Criar jogador e criar sorteio não são idempotentes. `writeFailure` (`web/src/lib/write-outcome.ts`, `mobile/src/lib/write-outcome.ts`) é a guarda comum: `rejected` (4xx exceto 429) ou `uncertain` (sem resposta, 5xx, 429).
+Criar jogador e criar sorteio não são idempotentes. Na web, a mutação do TanStack Query já guarda o estado da requisição (ADR 0005), então a fase é derivada dela e recebe um nome; nenhum `useState` repete o que a mutação sabe. `writeFailure` (`web/src/lib/write-outcome.ts`, `mobile/src/lib/write-outcome.ts`) é a guarda comum: `rejected` (4xx exceto 429) ou `uncertain` (sem resposta, 5xx, 429).
 
 | Máquina | Onde | Estados | Codificação |
 | --- | --- | --- | --- |
 | Criar sorteio (web) | `web/src/features/draws/draw-creation.tsx` (`DrawCreationPhase`) | `selecting`, `submitting`, `created`, `rejected`, `uncertain` | **Explícita**, derivada da mutação; exposta em `data-state`. |
 | Criar sorteio (mobile) | `mobile/src/features/draws/draw-creation-screen.tsx` | os mesmos | Derivada da mutação (`isPending`, `isSuccess`, `uncertain`) + trava; sem nome de fase. |
-| Cadastrar jogador (web) | `web/src/features/players/players-administration.tsx` | editando, enviando, recibo, rejeitado, incerto | Implícita, candidata: `receipt` + `mustReview` + mutação. |
-| Cadastrar jogador (mobile) | `mobile/src/features/administration/player-creation-screen.tsx` | os mesmos; o recibo pode ter o link oculto | Implícita, candidata: `pending` + `blocked` + `error` + `receipt` + três `useRef`. |
+| Cadastrar jogador (web) | `web/src/features/players/players-administration.tsx` (`PlayerCreationPhase`) | `editing`, `submitting`, `created`, `rejected`, `uncertain`, `reviewed` | **Explícita**, derivada da mutação; exposta em `data-state`. O recibo é o próprio resultado da mutação. |
+| Cadastrar jogador (mobile) | `mobile/src/features/administration/player-creation-machine.ts` | os mesmos; `created` pode ter `accessUrl: null` | **Explícita**. `conceal` ao sair do primeiro plano ou da tela. A requisição fica fora do cache do TanStack para o link não ser retido. |
 
 ```mermaid
 stateDiagram-v2
@@ -111,7 +111,9 @@ stateDiagram-v2
   submitting --> uncertain: sem resposta, 5xx ou 429
   rejected --> submitting: corrigir e enviar
   created --> [*]: abre o resultado
-  uncertain --> [*]: conferir lista ou histórico
+  uncertain --> reviewed: lista conferida (cadastro de jogador)
+  reviewed --> submitting: enviar de novo
+  uncertain --> [*]: conferir o histórico (sorteio)
 ```
 
 ### Formulários de perfil e consultas
@@ -137,6 +139,5 @@ A API não foi alterada. Estes ciclos são aplicados dentro de transações, com
 ## Pendências
 
 - **Resgate do link pessoal na web** é a maior máquina ainda implícita. Tem duas regiões independentes (a fase do link e a requisição em andamento, que nunca pode se sobrepor a outra). A conversão deve ser feita com os testes E2E rodando.
-- **Cadastro de jogador** (web e mobile) é a próxima candidata. Hoje, depois de conferir a lista, o botão volta a funcionar mas o aviso de resultado incerto continua na tela.
 - **Papel insuficiente na web**: `Administration` e `PlayersAdministration` mandam um jogador autenticado para `/entrar`; as demais páginas administrativas mandam para `/jogadores`. O comportamento foi preservado em `useSessionGate` (`nonAdminPath`); unificar é decisão de produto.
 - **Condição "sessão ativa" na API** está escrita em três lugares. Extrair para uma função exige rodar os testes de integração.

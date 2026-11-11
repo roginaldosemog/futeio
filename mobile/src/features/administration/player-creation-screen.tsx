@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@futeio/contracts';
 import { Action, Field, Message } from '../../components/ui';
 import { AccessError, apiRequest } from '../../lib/api';
+import { writeFailure } from '../../lib/write-outcome';
 import { useAuth } from '../../providers/auth-provider';
 import { typography, useTheme } from '../../theme';
 import { PrivateLinkReceipt } from './private-link-receipt';
@@ -11,10 +12,6 @@ import { PrivateLinkReceipt } from './private-link-receipt';
 type Player = components['schemas']['PlayerSummaryDto'];
 type Created = components['schemas']['CreatePlayerResponseDto'];
 type Receipt = { name: string; accessUrl: string | null };
-
-function uncertain(error: unknown) {
-  return !(error instanceof AccessError) || error.status >= 500 || error.status === 429;
-}
 
 export function PlayerCreationScreen() {
   const { session } = useAuth();
@@ -74,7 +71,8 @@ export function PlayerCreationScreen() {
       setName(''); setRating(''); setOwn(false);
     } catch (failure) {
       if (!mounted.current) return;
-      setBlocked(uncertain(failure));
+      // An uncertain creation stays blocked until the roster is reconciled.
+      setBlocked(writeFailure(failure) === 'uncertain');
       setError(failure instanceof AccessError && failure.status === 400
         ? 'Confira o nome e a nota inicial, de 0 a 10.'
         : failure instanceof AccessError && failure.status === 409

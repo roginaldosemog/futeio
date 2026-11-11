@@ -49,7 +49,7 @@ function user() { return userEvent.setup({ advanceTimers: jest.advanceTimersByTi
 function posts() { return mockRequest.mock.calls.filter(([, options]) => options?.method === 'POST'); }
 
 it('does not query or expose administration to a player', async () => {
-  mockAuth.mockReturnValue({ ...mockAuth(), session: { role: 'PLAYER', identityId: 'player-one', groupId: 'group-one' } });
+  mockAuth.mockReturnValue({ ...mockAuth(), status: 'authenticated', error: null, session: { role: 'PLAYER', identityId: 'player-one', groupId: 'group-one' } });
   await render(<QueryClientProvider client={client}><PlayerCreationScreen /></QueryClientProvider>);
   expect(screen.getByText('Somente o administrador pode cadastrar jogadores.')).toBeOnTheScreen();
   expect(mockRequest).not.toHaveBeenCalled();
@@ -152,7 +152,7 @@ it('clears a confirmed link on background and does not restore it on return', as
 });
 
 it('does not expose link controls to a player', async () => {
-  mockAuth.mockReturnValue({ ...mockAuth(), session: { role: 'PLAYER', identityId: 'player-one', groupId: 'group-one' } });
+  mockAuth.mockReturnValue({ ...mockAuth(), status: 'authenticated', error: null, session: { role: 'PLAYER', identityId: 'player-one', groupId: 'group-one' } });
   await render(<PlayerAccessControls id="player-one" />);
   expect(screen.queryByRole('button', { name: 'Gerar novo link' })).not.toBeOnTheScreen();
   expect(mockRequest).not.toHaveBeenCalled();
@@ -206,6 +206,22 @@ it('does not reintroduce a late rotation credential after the app leaves the for
   await act(() => { for (const listener of stateListeners) listener('inactive'); });
   await act(async () => { finish({ accessUrl: link }); });
   expect(screen.queryByText(link)).not.toBeOnTheScreen();
+});
+
+it('reports a rotation that finished in the background and tells the administrator the link is gone', async () => {
+  let finish!: (response: unknown) => void;
+  mockRequest.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+  await render(<PlayerAccessControls id="player-one" />);
+  const interaction = user();
+  await interaction.press(screen.getByRole('button', { name: 'Gerar novo link' }));
+  await interaction.press(screen.getByRole('button', { name: 'Confirmar novo link' }));
+  await act(() => { for (const listener of stateListeners) listener('background'); });
+  await act(async () => { finish({ accessUrl: link }); });
+  await act(() => { for (const listener of stateListeners) listener('active'); });
+  expect(screen.queryByText(link)).not.toBeOnTheScreen();
+  expect(screen.getByText('Novo link gerado. O link anterior e as sessões dele foram revogados.')).toBeOnTheScreen();
+  expect(screen.getByText('O link foi ocultado e não pode ser exibido de novo. Para compartilhar, gere um novo link.')).toBeOnTheScreen();
+  expect(screen.getByRole('button', { name: 'Gerar novo link' })).toBeEnabled();
 });
 
 it('clears an old player credential when the profile changes', async () => {

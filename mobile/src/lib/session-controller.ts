@@ -5,11 +5,25 @@ import type { SessionStore } from './session-store';
 
 export type Session = components['schemas']['SessionResponseDto'];
 type NativeSession = components['schemas']['NativeSessionResponseDto'];
-export type AuthState = {
-  status: 'loading' | 'anonymous' | 'authenticated' | 'error';
-  session: Session | null;
-  error: string | null;
-};
+/**
+ * The device's access state. Each status fixes what the other fields may hold,
+ * so "authenticated without a session" cannot be constructed and checking
+ * `status` narrows `session` for the caller.
+ *
+ * - `loading`: verifying or removing a credential; nothing private is shown.
+ * - `anonymous`: no credential on the device. `error` explains why the last
+ *   attempt or session ended (bad credentials, expiry, unconfirmed logout).
+ * - `authenticated`: the server confirmed this session.
+ * - `error`: the stored credential could not be verified or removed; the
+ *   screen offers a retry instead of the login form.
+ *
+ * Transitions and diagram: docs/maquinas-de-estado.md.
+ */
+export type AuthState =
+  | { status: 'loading'; session: null; error: null }
+  | { status: 'anonymous'; session: null; error: string | null }
+  | { status: 'authenticated'; session: Session; error: null }
+  | { status: 'error'; session: null; error: string };
 
 function validSession(value: Session): boolean {
   return Boolean(value && ['ADMIN', 'PLAYER'].includes(value.role) && typeof value.identityId === 'string' && typeof value.groupId === 'string');

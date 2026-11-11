@@ -1,77 +1,69 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { AppState, StyleSheet, Text, View } from 'react-native';
 import type { components } from '@futeio/contracts';
 import { Action, Message } from '../../components/ui';
 import { apiRequest } from '../../lib/api';
+import { useMachine } from '../../lib/machine';
 import { useAuth } from '../../providers/auth-provider';
 import { typography, useTheme } from '../../theme';
+import { initialLinkAccess, linkAccessTransition, type LinkAction } from './link-access-machine';
 import { PrivateLinkReceipt } from './private-link-receipt';
 
-export function PlayerAccessControls({ id, onChanged }: { id: string; onChanged?: () => void | Promise<void> }) {
+type Props = { id: string; onChanged?: () => void | Promise<void> };
+
+export function PlayerAccessControls({ id, onChanged }: Props) {
   const { session } = useAuth();
+  if (session?.role !== 'ADMIN') return null;
+  // One machine per player: another profile never inherits a link or a notice.
+  return <LinkAccessControls key={id} id={id} onChanged={onChanged} />;
+}
+
+function LinkAccessControls({ id, onChanged }: Props) {
   const colors = useTheme();
-  const [action, setAction] = useState<'rotate' | 'revoke' | null>(null);
-  const [url, setUrl] = useState<string>();
-  const [notice, setNotice] = useState<string>();
-  const [error, setError] = useState<string>();
-  const [pending, setPending] = useState(false);
-  const lock = useRef(false);
-  const revision = useRef(0);
+  const [state, send] = useMachine(linkAccessTransition, initialLinkAccess);
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
-    setUrl(undefined); setAction(null); setNotice(undefined); setError(undefined);
-    const subscription = AppState.addEventListener('change', state => {
-      if (state !== 'active') { revision.current++; setUrl(undefined); setAction(null); }
-    });
-    return () => { mounted.current = false; revision.current++; subscription.remove(); };
-  }, [id]);
+    const subscription = AppState.addEventListener('change', next => { if (next !== 'active') send({ type: 'conceal' }); });
+    return () => { mounted.current = false; send({ type: 'conceal' }); subscription.remove(); };
+  }, [send]);
 
   async function confirm() {
-    if (session?.role !== 'ADMIN' || !action || lock.current) return;
-    lock.current = true;
-    setPending(true); setUrl(undefined); setError(undefined); setNotice(undefined);
-    const privacyRevision = revision.current;
+    // The machine is the lock: a second press is ignored while submitting.
+    const submission = send({ type: 'confirm' });
+    if (submission?.status !== 'submitting') return;
     try {
-      if (action === 'rotate') {
+      if (submission.action === 'rotate') {
         const result = await apiRequest<components['schemas']['PlayerAccessLinkDto']>(`players/${encodeURIComponent(id)}/access-link/rotate`, { method: 'POST', body: {} });
-        if (mounted.current && privacyRevision === revision.current) {
-          setUrl(result.accessUrl);
-          setNotice('Novo link gerado. O link anterior e as sessões dele foram revogados.');
-        }
+        send({ type: 'rotated', url: result.accessUrl });
       } else {
         await apiRequest(`players/${encodeURIComponent(id)}/access-link`, { method: 'DELETE', body: {} });
-        if (mounted.current && privacyRevision === revision.current) setNotice('Acesso revogado. Gere outro link para permitir uma nova entrada.');
+        send({ type: 'revoked' });
       }
-      if (mounted.current && privacyRevision === revision.current) setAction(null);
       // UI refresh errors do not invalidate a confirmed credential operation.
-      if (mounted.current && privacyRevision === revision.current && onChanged) void Promise.resolve().then(onChanged).catch(() => {});
+      if (mounted.current && onChanged) void Promise.resolve().then(onChanged).catch(() => {});
     } catch {
-      if (mounted.current && privacyRevision === revision.current) {
-        setAction(null);
-        setError('Não foi possível confirmar a mudança. O acesso pode ter sido alterado. Gere e confirme um novo link antes de compartilhá-lo.');
-      }
-    } finally {
-      lock.current = false;
-      if (mounted.current) setPending(false);
+      send({ type: 'failed' });
     }
   }
 
-  if (session?.role !== 'ADMIN') return null;
-  function choose(next: 'rotate' | 'revoke') { setAction(next); setUrl(undefined); setNotice(undefined); setError(undefined); }
+  const pending = state.status === 'submitting';
+  const prompt: LinkAction | null = state.status === 'confirming' || (state.status === 'submitting' && !state.concealed) ? state.action : null;
   return <View style={[styles.section, { borderColor: colors.separator }]}>
     <Text accessibilityRole="header" style={[typography.heading, { color: colors.foreground }]}>Acesso do jogador</Text>
     <Message>Gerar outro link ou revogar o acesso encerra as sessões abertas com o link anterior. O perfil e as avaliações são preservados.</Message>
-    <Action secondary disabled={pending} onPress={() => choose('rotate')}>Gerar novo link</Action>
-    <Action secondary disabled={pending} onPress={() => choose('revoke')}>Revogar acesso</Action>
-    {action ? <View style={styles.confirmation}>
-      <Message>{action === 'rotate' ? 'Substituir o link atual e encerrar as sessões?' : 'Encerrar as sessões e bloquear o link atual?'}</Message>
-      <Action busy={pending} onPress={() => { void confirm(); }}>{action === 'rotate' ? 'Confirmar novo link' : 'Confirmar revogação'}</Action>
-      <Action secondary disabled={pending} onPress={() => setAction(null)}>Cancelar</Action>
+    <Action secondary disabled={pending} onPress={() => { send({ type: 'choose', action: 'rotate' }); }}>Gerar novo link</Action>
+    <Action secondary disabled={pending} onPress={() => { send({ type: 'choose', action: 'revoke' }); }}>Revogar acesso</Action>
+    {prompt ? <View style={styles.confirmation}>
+      <Message>{prompt === 'rotate' ? 'Substituir o link atual e encerrar as sessões?' : 'Encerrar as sessões e bloquear o link atual?'}</Message>
+      <Action busy={pending} onPress={() => { void confirm(); }}>{prompt === 'rotate' ? 'Confirmar novo link' : 'Confirmar revogação'}</Action>
+      <Action secondary disabled={pending} onPress={() => { send({ type: 'cancel' }); }}>Cancelar</Action>
     </View> : null}
-    {notice ? <Message>{notice}</Message> : null}
-    {error ? <Message error>{error}</Message> : null}
-    {url ? <PrivateLinkReceipt url={url} onHide={() => setUrl(undefined)} /> : null}
+    {state.status === 'rotated' ? <Message>Novo link gerado. O link anterior e as sessões dele foram revogados.</Message> : null}
+    {state.status === 'rotated' && state.url === null ? <Message>O link foi ocultado e não pode ser exibido de novo. Para compartilhar, gere um novo link.</Message> : null}
+    {state.status === 'revoked' ? <Message>Acesso revogado. Gere outro link para permitir uma nova entrada.</Message> : null}
+    {state.status === 'failed' ? <Message error>Não foi possível confirmar a mudança. O acesso pode ter sido alterado. Gere e confirme um novo link antes de compartilhá-lo.</Message> : null}
+    {state.status === 'rotated' && state.url !== null ? <PrivateLinkReceipt url={state.url} onHide={() => { send({ type: 'hide' }); }} /> : null}
   </View>;
 }
 

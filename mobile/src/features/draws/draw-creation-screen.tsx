@@ -5,6 +5,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Action, Field, Loading, Message } from '../../components/ui';
 import { AccessError } from '../../lib/api';
+import { writeFailure } from '../../lib/write-outcome';
 import { useAuth } from '../../providers/auth-provider';
 import { typography, useTheme } from '../../theme';
 import { createDraw, formatNumber, listParticipants } from './draws-client';
@@ -44,7 +45,7 @@ function DrawCreationContent() {
       router.replace({ pathname: '/sorteios/[id]', params: { id: draw.id } });
     },
   });
-  const uncertain = creation.isError && (!(creation.error instanceof AccessError) || creation.error.status >= 500 || creation.error.status === 429);
+  const uncertain = creation.isError && writeFailure(creation.error) === 'uncertain';
   async function submit() {
     if (!groupId || !identityId || !lifecycle.current.focused || selected.size !== 20 || lock.current || creation.isPending || creation.isSuccess || uncertain) return;
     lock.current = true;
@@ -53,7 +54,7 @@ function DrawCreationContent() {
     catch (error) {
       // Confirmed/ambiguous outcomes stay locked even before the observer's
       // next render. A rejected input may be corrected and submitted again.
-      if (error instanceof AccessError && error.status < 500 && error.status !== 429) lock.current = false;
+      if (writeFailure(error) === 'rejected') lock.current = false;
     }
   }
   function toggle(id: string) {

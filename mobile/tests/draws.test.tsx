@@ -64,7 +64,7 @@ async function selectTwenty() {
 }
 
 it('denies creating a draw to players without requesting a roster', async () => {
-  auth.mockReturnValue({ ...auth(), session: { role: 'PLAYER', groupId: 'group', identityId: 'player' } });
+  auth.mockReturnValue({ ...auth(), status: 'authenticated', error: null, session: { role: 'PLAYER', groupId: 'group', identityId: 'player' } });
   await render(<QueryClientProvider client={client}><DrawCreationScreen /></QueryClientProvider>);
   expect(screen.getByText('Somente o administrador pode criar sorteios.')).toBeOnTheScreen();
   expect(request).not.toHaveBeenCalled();
@@ -202,7 +202,7 @@ it.each(['unmount', 'blur', 'blur-and-refocus', 'new-session'])('does not naviga
   await waitFor(() => expect(client.isMutating()).toBe(1));
   if (situation === 'unmount') await view.unmount();
   else if (situation === 'new-session') {
-    auth.mockReturnValue({ ...auth(), session: { role: 'ADMIN', groupId: 'another-group', identityId: 'another-admin' } });
+    auth.mockReturnValue({ ...auth(), status: 'authenticated', error: null, session: { role: 'ADMIN', groupId: 'another-group', identityId: 'another-admin' } });
     request.mockResolvedValue(players);
     await view.rerender(<QueryClientProvider client={client}><DrawCreationScreen /></QueryClientProvider>);
     await waitFor(() => expect(screen.getByText('0 de 20 selecionados')).toBeOnTheScreen());

@@ -132,6 +132,27 @@ it('requires explicit successful reconciliation before retrying an uncertain cre
   expect(screen.getByRole('button', { name: 'Confirmar cadastro' })).toBeEnabled();
 });
 
+it('replaces the uncertain warning with guidance after the roster was checked and blocks again on a new uncertain result', async () => {
+  mockRequest.mockImplementation(async <T,>(_path: string, options?: { method?: string }): Promise<T> => {
+    if (options?.method === 'POST') throw new AccessError(503);
+    return [] as T;
+  });
+  await creation();
+  const interaction = user();
+  await interaction.type(screen.getByLabelText('Nome do jogador'), 'Ana');
+  await interaction.type(screen.getByLabelText('Nota inicial, de 0 a 10'), '8');
+  await interaction.press(screen.getByRole('button', { name: 'Confirmar cadastro' }));
+  expect(screen.getByRole('alert')).toHaveTextContent(/Ele pode ter sido registrado/);
+  await interaction.press(screen.getByRole('button', { name: 'Atualizar e conferir lista' }));
+  expect(screen.getByText('Lista atualizada. Confira se o jogador já aparece nela antes de cadastrar novamente.')).toBeOnTheScreen();
+  expect(screen.queryByRole('alert')).not.toBeOnTheScreen();
+  expect(screen.getByLabelText('Nome do jogador')).toHaveProp('value', 'Ana');
+  await interaction.press(screen.getByRole('button', { name: 'Confirmar cadastro' }));
+  expect(posts()).toHaveLength(2);
+  expect(screen.getByRole('alert')).toHaveTextContent(/Ele pode ter sido registrado/);
+  expect(screen.getByRole('button', { name: 'Confirmar cadastro' })).toBeDisabled();
+});
+
 it('disables linking another player to an administrator with an existing profile', async () => {
   setupRequest([{ ...player, isOwnProfile: true }]);
   await render(<QueryClientProvider client={client}><PlayerCreationScreen /></QueryClientProvider>);

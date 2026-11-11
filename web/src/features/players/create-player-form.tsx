@@ -11,9 +11,11 @@ export interface CreatePlayerFormProps {
   blocked?: boolean;
   focusName?: boolean;
   errorMessage?: string;
+  /** Guidance that is not a failure, such as "the list was refreshed". */
+  notice?: string;
 }
 
-export function CreatePlayerForm({ onSubmit, pending, ownProfileExists, blocked, focusName, errorMessage }: CreatePlayerFormProps) {
+export function CreatePlayerForm({ onSubmit, pending, ownProfileExists, blocked, focusName, errorMessage, notice }: CreatePlayerFormProps) {
   const [name, setName] = useState("");
   const [rating, setRating] = useState("");
   const [ownProfile, setOwnProfile] = useState(false);
@@ -48,6 +50,7 @@ export function CreatePlayerForm({ onSubmit, pending, ownProfileExists, blocked,
       <p className="mt-2 text-sm leading-relaxed text-[#3c5b4b]">{ownProfileExists ? "Seu perfil já está cadastrado." : "Marque apenas ao cadastrar você como jogador da pelada."}</p>
       <button className="mt-6 min-h-13 w-full rounded-xl bg-[#163b2a] px-5 py-3 text-base font-semibold text-white transition-colors hover:bg-[#22533d] disabled:cursor-wait disabled:bg-[#d6e2db] disabled:text-[#3c5b4b] motion-reduce:transition-none" type="submit" disabled={pending || blocked}>{pending ? "Cadastrando..." : "Cadastrar jogador"}</button>
       {errorMessage ? <p className="mt-5 text-base leading-relaxed text-[#8b3028]" role="alert" id={errorId}>{errorMessage}</p> : null}
+      {notice ? <p className="mt-5 text-base leading-relaxed text-[#3c5b4b]" role="status">{notice}</p> : null}
     </form>
   );
 }

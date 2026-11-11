@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient
 import { AccessError } from "../access/access-client";
 import type { SessionResponse } from "../access/access-client";
 import { createPlayer, listPlayers } from "./players-client";
-import type { CreatePlayerInput, CreatePlayerResult, PlayerSummary } from "./players-client";
+import type { CreatePlayerInput, PlayerSummary } from "./players-client";
 import { CreatePlayerForm } from "./create-player-form";
 import { CreatedPlayerResult } from "./created-player-result";
 import { PlayerList } from "./player-list";
@@ -25,11 +25,24 @@ function creationError(error: unknown) {
   return "Não foi possível confirmar o cadastro. Atualize a lista antes de tentar novamente.";
 }
 
+/**
+ * Creating a player is not idempotent, and its result carries a personal link
+ * that is shown once (catalog: docs/maquinas-de-estado.md):
+ *
+ * - `editing` / `rejected`: the form may be corrected and submitted.
+ * - `submitting`: one request in flight.
+ * - `created`: recorded; the receipt with the link replaces the form.
+ * - `uncertain`: it may have been recorded. Closed until the roster refreshes.
+ * - `reviewed`: the roster was refreshed after an uncertain result, so the
+ *   administrator can see whether the player is there and submit again.
+ */
+type PlayerCreationPhase = "editing" | "submitting" | "created" | "rejected" | "uncertain" | "reviewed";
+
 function PlayersWorkspace({ session }: { session: SessionResponse }) {
   const router = useRouter();
   const client = useQueryClient();
-  const [receipt, setReceipt] = useState<CreatePlayerResult | null>(null);
-  const [mustReview, setMustReview] = useState(false);
+  // The uncertain failure that a successful roster refresh already reconciled.
+  const [reconciled, setReconciled] = useState<unknown>(null);
   const [focusForm, setFocusForm] = useState(false);
   const queryKey = ["players", session.groupId, session.identityId];
   const roster = useQuery({ queryKey, queryFn: ({ signal }) => listPlayers(signal) });
@@ -38,14 +51,22 @@ function PlayersWorkspace({ session }: { session: SessionResponse }) {
     retry: false,
     gcTime: 0,
     onSuccess: (result) => {
-      setReceipt(result);
       client.setQueryData<PlayerSummary[]>(queryKey, (previous = []) => [...previous.filter((player) => player.id !== result.player.id), result.player]);
       // A failed list refresh must not turn a confirmed POST into a failed creation.
       void client.invalidateQueries({ queryKey });
     },
-    // An uncertain creation stays blocked until the roster is reconciled.
-    onError: (error) => { setMustReview(writeFailure(error) === "uncertain"); },
   });
+  const phase: PlayerCreationPhase = creation.isPending
+    ? "submitting"
+    : creation.isSuccess
+      ? "created"
+      : !creation.isError
+        ? "editing"
+        : writeFailure(creation.error) === "rejected"
+          ? "rejected"
+          : creation.error === reconciled
+            ? "reviewed"
+            : "uncertain";
   const accessDenied = denied(roster.error) || denied(creation.error);
 
   useEffect(() => {
@@ -53,16 +74,15 @@ function PlayersWorkspace({ session }: { session: SessionResponse }) {
   }, [accessDenied, client, router]);
 
   async function save(input: CreatePlayerInput): Promise<boolean> {
-    setReceipt(null);
     creation.reset();
     try { await creation.mutateAsync(input); return true; }
     catch { return false; }
   }
   async function refreshRoster() {
     const result = await roster.refetch();
-    if (result.isSuccess) setMustReview(false);
+    if (result.isSuccess) setReconciled(creation.error);
   }
-  function nextPlayer() { creation.reset(); setReceipt(null); setMustReview(false); setFocusForm(true); }
+  function nextPlayer() { creation.reset(); setFocusForm(true); }
 
   if (accessDenied) return <p role="status" className="text-base leading-relaxed text-[#3c5b4b]">Verificando seu acesso...</p>;
   const players = roster.data ?? [];
@@ -70,11 +90,11 @@ function PlayersWorkspace({ session }: { session: SessionResponse }) {
     <div>
       <Link href="/administracao" className="inline-flex min-h-12 items-center font-semibold underline underline-offset-4">Voltar à administração</Link>
       <div className="mt-8 grid gap-12 md:grid-cols-2 md:gap-14">
-        <section aria-label="Cadastro de jogador" className="min-w-0">
-          {receipt ? <CreatedPlayerResult result={receipt} onNext={nextPlayer} /> : (
+        <section aria-label="Cadastro de jogador" className="min-w-0" data-state={phase}>
+          {creation.isSuccess ? <CreatedPlayerResult result={creation.data} onNext={nextPlayer} /> : (
             <>
               <h2 className="mb-6 text-2xl leading-tight font-bold">Cadastrar jogador</h2>
-              <CreatePlayerForm onSubmit={save} pending={creation.isPending} ownProfileExists={players.some((player) => player.isOwnProfile)} blocked={mustReview || roster.isPending || !roster.data} focusName={focusForm} errorMessage={creationError(creation.error)} />
+              <CreatePlayerForm onSubmit={save} pending={creation.isPending} ownProfileExists={players.some((player) => player.isOwnProfile)} blocked={phase === "uncertain" || roster.isPending || !roster.data} focusName={focusForm} errorMessage={phase === "reviewed" ? undefined : creationError(creation.error)} notice={phase === "reviewed" ? "Lista atualizada. Confira se o jogador já aparece nela antes de cadastrar novamente." : undefined} />
             </>
           )}
         </section>

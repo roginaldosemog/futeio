@@ -119,6 +119,21 @@ describe("PlayersAdministration", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Cadastrar jogador" })).toBeEnabled());
     expect(createMock).toHaveBeenCalledTimes(1);
   });
+  it("replaces the uncertain warning with guidance once the roster was checked, and blocks again on a new uncertain result", async () => {
+    const user = userEvent.setup();
+    createMock.mockRejectedValueOnce(new AccessError(503)).mockRejectedValueOnce(new AccessError(503));
+    render(<PlayersAdministration />);
+    await fillAndSubmit(user);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Atualize a lista antes de tentar novamente");
+    await user.click(screen.getByRole("button", { name: "Atualizar lista" }));
+    expect(await screen.findByText("Lista atualizada. Confira se o jogador já aparece nela antes de cadastrar novamente.")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Nome" })).toHaveValue("Colega");
+    await user.click(screen.getByRole("button", { name: "Cadastrar jogador" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Atualize a lista antes de tentar novamente");
+    expect(screen.getByRole("button", { name: "Cadastrar jogador" })).toBeDisabled();
+    expect(createMock).toHaveBeenCalledTimes(2);
+  });
   it("explains a profile conflict and never creates automatically again", async () => {
     const user = userEvent.setup();
     createMock.mockRejectedValue(new AccessError(409));

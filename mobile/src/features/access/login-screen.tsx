@@ -29,14 +29,19 @@ export function LoginScreen() {
     try {
       if (mode === 'player') await auth.redeemLink(link.trim());
       else await auth.signIn(email.trim(), password);
-    } catch {
-      setError(mode === 'player' ? 'Não foi possível entrar. Confira seu link ou peça um novo ao administrador.' : 'Não foi possível entrar. Confira o e-mail e a senha e tente novamente.');
+    } catch (failure) {
+      // The session controller rejects with the reason (credentials, rate
+      // limit, connection). Show that one reason instead of a second guess.
+      setError(failure instanceof Error && failure.message ? failure.message
+        : mode === 'player' ? 'Não foi possível entrar. Confira seu link ou peça um novo ao administrador.' : 'Não foi possível entrar. Confira o e-mail e a senha e tente novamente.');
     } finally {
       setPassword(''); setLink(''); setPending(false); lock.current = false;
     }
   }
   if (auth.status === 'loading') return <Loading label="Verificando seu acesso..." />;
   if (auth.status === 'authenticated') return <Redirect href="/jogadores" />;
+  // One message slot: what this form just reported, else why the session ended.
+  const message = error ?? auth.error;
   return <SafeAreaView style={[styles.root, { backgroundColor: colors.background }]}>
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
@@ -56,8 +61,7 @@ export function LoginScreen() {
           <Field label="E-mail" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress" editable={!pending} />
           <Field label="Senha" value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" textContentType="password" editable={!pending} onSubmitEditing={() => { void submit(); }} />
         </>}
-        {error ? <Message error>{error}</Message> : null}
-        {auth.error ? <Message error>{auth.error}</Message> : null}
+        {message ? <Message error>{message}</Message> : null}
         <Action busy={pending} disabled={Boolean(configurationError)} onPress={() => { void submit(); }}>{pending ? 'Entrando...' : 'Entrar'}</Action>
         <Message>Perfis e avaliações são privados para os membros da pelada. Guarde seu link e compartilhe-o somente com o administrador quando precisar de ajuda.</Message>
       </ScrollView>

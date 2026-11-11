@@ -62,6 +62,23 @@ it('logs in the administrator and clears the password after the attempt', async 
   expect(screen.getByLabelText('Senha')).toHaveProp('value', '');
 });
 
+it('explains a failed login once, with the reason reported by the session', async () => {
+  const reason = 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+  signIn.mockImplementation(async () => {
+    // The real controller publishes the reason and rejects with the same text.
+    mockAuth.mockReturnValue({ status: 'anonymous', session: null, error: reason, signIn, redeemLink, signOut, retry });
+    throw new Error(reason);
+  });
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+  await render(<LoginScreen />);
+  await user.press(screen.getByRole('button', { name: 'Sou administrador' }));
+  await user.type(screen.getByLabelText('E-mail'), 'admin@example.test');
+  await user.type(screen.getByLabelText('Senha'), 'synthetic-password');
+  await user.press(screen.getByRole('button', { name: 'Entrar' }));
+  expect(screen.getAllByRole('alert')).toHaveLength(1);
+  expect(screen.getByRole('alert')).toHaveTextContent(reason);
+});
+
 it('passes the personal link to authentication without retaining it in the form', async () => {
   const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
   await render(<LoginScreen />);

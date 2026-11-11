@@ -26,6 +26,7 @@ O MVP web está implementado e verificado localmente: acesso administrativo, cad
 - [Escopo aprovado e desenho do MVP](docs/pitroom/specs/2026-11-02-futeio-mvp-design.md).
 - [Plano das primeiras entregas](docs/pitroom/plans/2026-11-02-primeiras-entregas.md).
 - [Versões e compatibilidade verificadas](docs/compatibilidade.md).
+- [Máquinas de estado: catálogo, convenções e pendências](docs/maquinas-de-estado.md).
 - [E1: verificações, reprodução limpa e limitações](docs/entregas/E1-fundacao.md).
 - [E2: acesso administrativo e verificações](docs/entregas/E2-acesso-administrativo.md).
 - [E3: cadastro, nota inicial, links e evidências](docs/entregas/E3-cadastro-jogadores.md).

@@ -15,13 +15,25 @@ import {
 } from "../access/private-workspace";
 import { listPlayers } from "../players/players-client";
 import { formatRating } from "@/lib/format";
+import { writeFailure } from "@/lib/write-outcome";
 import { createDraw } from "./draws-client";
+
+/**
+ * Creating a draw is not idempotent, so the form has one way forward from
+ * each phase (catalog: docs/maquinas-de-estado.md):
+ *
+ * - `selecting` / `rejected`: the selection may change and be submitted.
+ * - `submitting`: one request in flight.
+ * - `created`: recorded. The form stays closed while the result opens, so a
+ *   second click cannot record a second draw.
+ * - `uncertain`: it may have been recorded. Closed until the history is checked.
+ */
+type DrawCreationPhase = "selecting" | "submitting" | "created" | "rejected" | "uncertain";
 
 function DrawCreationContent({ session }: { session: SessionResponse }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [search, setSearch] = useState("");
-  const [uncertain, setUncertain] = useState(false);
   const lock = useRef(false);
   const roster = useQuery({
     queryKey: ["roster", session.groupId, session.identityId],
@@ -30,20 +42,26 @@ function DrawCreationContent({ session }: { session: SessionResponse }) {
   const creation = useMutation({
     mutationFn: createDraw,
     onSuccess: (draw) => router.push(`/sorteios/${draw.id}`),
-    onError: (error) =>
-      setUncertain(!(error instanceof AccessError) || error.status >= 500 || error.status === 429),
   });
+  const phase: DrawCreationPhase = creation.isPending
+    ? "submitting"
+    : creation.isSuccess
+      ? "created"
+      : creation.isError
+        ? writeFailure(creation.error)
+        : "selecting";
+  const open = phase === "selecting" || phase === "rejected";
   const expired = usePrivateError(roster.error, creation.error);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (selected.size !== 20 || lock.current || creation.isPending || uncertain) return;
+    if (selected.size !== 20 || lock.current || !open) return;
     lock.current = true;
     try {
       await creation.mutateAsync([...selected]);
-    } catch {
-      /* Present a safe error without retrying the draw. */
-    } finally {
-      lock.current = false;
+    } catch (error) {
+      // Present a safe error without retrying the draw. Only a refused request
+      // reopens the form; a recorded or uncertain draw keeps it locked.
+      if (writeFailure(error) === "rejected") lock.current = false;
     }
   }
   function toggle(id: string) {
@@ -71,7 +89,7 @@ function DrawCreationContent({ session }: { session: SessionResponse }) {
     player.name.toLocaleLowerCase("pt-BR").includes(search.trim().toLocaleLowerCase("pt-BR")),
   );
   return (
-    <form onSubmit={submit} aria-busy={creation.isPending}>
+    <form onSubmit={submit} aria-busy={phase === "submitting"} data-state={phase}>
       <p className="max-w-[65ch] leading-relaxed text-[#3c5b4b]">
         Selecione os 20 jogadores de linha que vão jogar. Os goleiros ficam de fora. O sorteio usa
         as notas atuais para aproximar a força de quatro times de cinco.
@@ -92,7 +110,7 @@ function DrawCreationContent({ session }: { session: SessionResponse }) {
           onChange={(event) => setSearch(event.target.value)}
         />
       </label>
-      <fieldset disabled={creation.isPending} className="mt-7">
+      <fieldset disabled={phase === "submitting" || phase === "created"} className="mt-7">
         <legend className="text-xl font-bold">Participantes do sorteio</legend>
         <p role="status" aria-live="polite" className="mt-3 font-semibold tabular-nums">
           {selected.size} de 20 selecionados
@@ -128,19 +146,30 @@ function DrawCreationContent({ session }: { session: SessionResponse }) {
         <button
           type="submit"
           className={buttonClass}
-          disabled={selected.size !== 20 || creation.isPending || uncertain}
+          disabled={selected.size !== 20 || !open}
         >
-          {creation.isPending ? "Montando os times..." : "Sortear 4 times"}
+          {phase === "submitting" ? "Montando os times..." : "Sortear 4 times"}
         </button>
         <button
           type="button"
           className={secondaryClass}
-          disabled={!selected.size || creation.isPending}
+          disabled={!selected.size || phase === "submitting" || phase === "created"}
           onClick={() => setSelected(new Set())}
         >
           Limpar seleção
         </button>
       </div>
+      {creation.isSuccess ? (
+        <p role="status" className="mt-5 max-w-[65ch]">
+          Sorteio registrado.{" "}
+          <Link
+            href={`/sorteios/${creation.data.id}`}
+            className="font-semibold underline underline-offset-4"
+          >
+            Ver os times
+          </Link>
+        </p>
+      ) : null}
       {creation.isError ? (
         <p role="alert" className="mt-5 max-w-[65ch] text-[#8b3028]">
           {creation.error instanceof AccessError && creation.error.status === 400
@@ -148,7 +177,7 @@ function DrawCreationContent({ session }: { session: SessionResponse }) {
             : "Não foi possível confirmar o sorteio. Confira o histórico antes de tentar novamente; ele pode ter sido registrado."}
         </p>
       ) : null}
-      {uncertain ? (
+      {phase === "uncertain" ? (
         <Link
           href="/sorteios"
           className="mt-3 inline-flex min-h-12 items-center font-semibold underline underline-offset-4"

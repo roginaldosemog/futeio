@@ -85,3 +85,34 @@ it("blocks a second draw after an uncertain response and points to the history",
   ).toHaveAttribute("href", "/sorteios");
   expect(createDraw).toHaveBeenCalledTimes(1);
 });
+it("keeps the form closed after a recorded draw so a second click cannot record another", async () => {
+  const user = userEvent.setup();
+  jest
+    .mocked(createDraw)
+    .mockResolvedValue({ id: "draw-id" } as Awaited<ReturnType<typeof createDraw>>);
+  render(<DrawCreation />);
+  const boxes = await screen.findAllByRole("checkbox");
+  for (const box of boxes.slice(0, 20)) fireEvent.click(box);
+  const submit = screen.getByRole("button", { name: "Sortear 4 times" });
+  await user.click(submit);
+  await waitFor(() => expect(push).toHaveBeenCalledWith("/sorteios/draw-id"));
+  expect(submit).toBeDisabled();
+  fireEvent.submit(submit.closest("form")!);
+  expect(createDraw).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("link", { name: "Ver os times" })).toHaveAttribute(
+    "href",
+    "/sorteios/draw-id",
+  );
+});
+it("reopens the form after the server refuses a selection", async () => {
+  const user = userEvent.setup();
+  jest.mocked(createDraw).mockRejectedValue(new AccessError(400));
+  render(<DrawCreation />);
+  const boxes = await screen.findAllByRole("checkbox");
+  for (const box of boxes.slice(0, 20)) fireEvent.click(box);
+  await user.click(screen.getByRole("button", { name: "Sortear 4 times" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Confira a seleção");
+  expect(screen.getByRole("button", { name: "Sortear 4 times" })).toBeEnabled();
+  await user.click(screen.getByRole("button", { name: "Sortear 4 times" }));
+  await waitFor(() => expect(createDraw).toHaveBeenCalledTimes(2));
+});

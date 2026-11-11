@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMachine } from "@/lib/machine";
 import { buttonClass, secondaryClass } from "../access/private-workspace";
+import { initialLinkAccess, linkAccessTransition } from "./link-access-machine";
 import { revokeLink, rotateLink } from "./players-client";
 
 export function PlayerLinkControls({
@@ -11,52 +12,58 @@ export function PlayerLinkControls({
   id: string;
   onFailure: (error: unknown) => void;
 }) {
-  const [action, setAction] = useState<"rotate" | "revoke" | null>(null);
-  const [pending, setPending] = useState(false);
-  const [url, setUrl] = useState<string>();
-  const [notice, setNotice] = useState<string>();
-  const [error, setError] = useState<string>();
-  const lock = useRef(false);
+  const [state, send] = useMachine(linkAccessTransition, initialLinkAccess);
   async function confirm() {
-    if (!action || pending || lock.current) return;
-    lock.current = true;
-    setPending(true);
-    setUrl(undefined);
-    setNotice(undefined);
-    setError(undefined);
+    // The machine is the lock: a second click is ignored while submitting.
+    const submission = send({ type: "confirm" });
+    if (submission?.status !== "submitting") return;
     try {
-      if (action === "rotate") {
+      if (submission.action === "rotate") {
         const result = await rotateLink(id);
-        setUrl(result.accessUrl);
-        setNotice("Novo link gerado. O acesso anterior foi encerrado.");
+        send({ type: "rotated", url: result.accessUrl });
       } else {
         await revokeLink(id);
-        setNotice("Acesso revogado. Gere um novo link para permitir outra entrada.");
+        send({ type: "revoked" });
       }
-      setAction(null);
     } catch (failure) {
       onFailure(failure);
-      setError(
-        "Não foi possível confirmar a mudança de acesso. Tente gerar um novo link antes de compartilhá-lo.",
-      );
-    } finally {
-      lock.current = false;
-      setPending(false);
+      send({ type: "failed" });
     }
   }
   async function copy() {
-    if (!url) return;
+    if (state.status !== "rotated") return;
     try {
-      await navigator.clipboard.writeText(url);
-      setNotice("Link copiado.");
+      await navigator.clipboard.writeText(state.url);
+      send({ type: "copied" });
     } catch {
-      setError("Selecione o link e copie manualmente.");
+      send({ type: "copyUnavailable" });
     }
   }
+  const pending = state.status === "submitting";
+  const action =
+    state.status === "confirming" || state.status === "submitting" || state.status === "failed"
+      ? state.action
+      : null;
+  const notice =
+    state.status === "revoked"
+      ? "Acesso revogado. Gere um novo link para permitir outra entrada."
+      : state.status === "rotated"
+        ? state.copy === "copied"
+          ? "Link copiado."
+          : "Novo link gerado. O acesso anterior foi encerrado."
+        : undefined;
+  const error =
+    state.status === "failed"
+      ? "Não foi possível confirmar a mudança de acesso. Tente gerar um novo link antes de compartilhá-lo."
+      : state.status === "rotated" && state.copy === "unavailable"
+        ? "Selecione o link e copie manualmente."
+        : undefined;
+  const url = state.status === "rotated" ? state.url : undefined;
   return (
     <section
       aria-labelledby="player-access-heading"
       className="mt-12 border-t border-[#d6e2db] pt-8"
+      data-state={state.status}
     >
       <h2 id="player-access-heading" className="text-2xl font-bold">
         Acesso do jogador
@@ -69,22 +76,14 @@ export function PlayerLinkControls({
         <button
           className={secondaryClass}
           disabled={pending}
-          onClick={() => {
-            setAction("rotate");
-            setUrl(undefined);
-            setNotice(undefined);
-          }}
+          onClick={() => send({ type: "choose", action: "rotate" })}
         >
           Gerar novo link
         </button>
         <button
           className={secondaryClass}
           disabled={pending}
-          onClick={() => {
-            setAction("revoke");
-            setUrl(undefined);
-            setNotice(undefined);
-          }}
+          onClick={() => send({ type: "choose", action: "revoke" })}
         >
           Revogar acesso
         </button>
@@ -104,7 +103,11 @@ export function PlayerLinkControls({
                   ? "Confirmar novo link"
                   : "Confirmar revogação"}
             </button>
-            <button className={secondaryClass} disabled={pending} onClick={() => setAction(null)}>
+            <button
+              className={secondaryClass}
+              disabled={pending}
+              onClick={() => send({ type: "cancel" })}
+            >
               Cancelar
             </button>
           </div>
@@ -127,10 +130,7 @@ export function PlayerLinkControls({
             </button>
             <button
               className={secondaryClass}
-              onClick={() => {
-                setUrl(undefined);
-                setNotice(undefined);
-              }}
+              onClick={() => send({ type: "hide" })}
             >
               Ocultar link
             </button>

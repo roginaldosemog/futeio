@@ -4,13 +4,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AccessError, currentSession } from "../access/access-client";
+import { AccessError } from "../access/access-client";
 import type { SessionResponse } from "../access/access-client";
 import { createPlayer, listPlayers } from "./players-client";
 import type { CreatePlayerInput, CreatePlayerResult, PlayerSummary } from "./players-client";
 import { CreatePlayerForm } from "./create-player-form";
 import { CreatedPlayerResult } from "./created-player-result";
 import { PlayerList } from "./player-list";
+import { useSessionGate } from "../access/session-gate";
+import { writeFailure } from "@/lib/write-outcome";
 
 function denied(error: unknown) { return error instanceof AccessError && (error.status === 401 || error.status === 403); }
 function creationError(error: unknown) {
@@ -41,7 +43,8 @@ function PlayersWorkspace({ session }: { session: SessionResponse }) {
       // A failed list refresh must not turn a confirmed POST into a failed creation.
       void client.invalidateQueries({ queryKey });
     },
-    onError: (error) => { setMustReview(!(error instanceof AccessError) || error.status >= 500 || error.status === 429); },
+    // An uncertain creation stays blocked until the roster is reconciled.
+    onError: (error) => { setMustReview(writeFailure(error) === "uncertain"); },
   });
   const accessDenied = denied(roster.error) || denied(creation.error);
 
@@ -96,24 +99,8 @@ function PrivatePlayersWorkspace({ session }: { session: SessionResponse }) {
 }
 
 export function PlayersAdministration() {
-  const router = useRouter();
-  const [session, setSession] = useState<SessionResponse | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    const controller = new AbortController();
-    currentSession(controller.signal).then((current) => {
-      if (controller.signal.aborted) return;
-      if (current.role !== "ADMIN") { router.replace("/entrar"); return; }
-      setSession(current);
-    }).catch((error: unknown) => {
-      if (controller.signal.aborted) return;
-      if (denied(error)) router.replace("/entrar");
-      else setFailed(true);
-    });
-    return () => controller.abort();
-  }, [attempt, router]);
-  if (failed) return <div><p role="alert" className="text-base leading-relaxed text-[#8b3028]">Não foi possível verificar seu acesso. Tente novamente em instantes.</p><button type="button" className="mt-6 min-h-12 rounded-xl border border-[#6b8576] px-5 py-3 font-semibold" onClick={() => { setFailed(false); setAttempt((value) => value + 1); }}>Tentar novamente</button></div>;
-  if (!session) return <p role="status" className="text-base leading-relaxed text-[#3c5b4b]">Verificando seu acesso...</p>;
-  return <PrivatePlayersWorkspace session={session} />;
+  const gate = useSessionGate({ adminOnly: true });
+  if (gate.status === "unavailable") return <div><p role="alert" className="text-base leading-relaxed text-[#8b3028]">Não foi possível verificar seu acesso. Tente novamente em instantes.</p><button type="button" className="mt-6 min-h-12 rounded-xl border border-[#6b8576] px-5 py-3 font-semibold" onClick={gate.retry}>Tentar novamente</button></div>;
+  if (gate.status === "checking") return <p role="status" className="text-base leading-relaxed text-[#3c5b4b]">Verificando seu acesso...</p>;
+  return <PrivatePlayersWorkspace session={gate.session} />;
 }

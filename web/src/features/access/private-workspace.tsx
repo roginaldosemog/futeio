@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
-import { AccessError, currentSession, logout, type SessionResponse } from "./access-client";
+import { AccessError, logout, type SessionResponse } from "./access-client";
+import { useSessionGate } from "./session-gate";
 
 export const buttonClass =
   "inline-flex min-h-12 items-center justify-center rounded-xl bg-[#163b2a] px-5 py-3 font-semibold text-white transition-colors hover:bg-[#22533d] disabled:cursor-not-allowed disabled:bg-[#d6e2db] disabled:text-[#3c5b4b] motion-reduce:transition-none";
@@ -103,51 +104,23 @@ function WorkspaceSession({
   adminOnly: boolean;
   children: (session: SessionResponse) => ReactNode;
 }) {
-  const router = useRouter();
-  const [session, setSession] = useState<SessionResponse | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    const controller = new AbortController();
-    currentSession(controller.signal)
-      .then((value) => {
-        if (controller.signal.aborted) return;
-        if (adminOnly && value.role !== "ADMIN") {
-          router.replace("/jogadores");
-          return;
-        }
-        setSession(value);
-      })
-      .catch((error: unknown) => {
-        if (!controller.signal.aborted) {
-          if (denied(error)) router.replace("/entrar");
-          else setFailed(true);
-        }
-      });
-    return () => controller.abort();
-  }, [adminOnly, attempt, router]);
-  if (failed)
+  const gate = useSessionGate({ adminOnly, nonAdminPath: "/jogadores" });
+  if (gate.status === "unavailable")
     return (
       <div>
         <p role="alert" className="text-[#8b3028]">
           Não foi possível verificar seu acesso.
         </p>
-        <button
-          className={`${secondaryClass} mt-5`}
-          onClick={() => {
-            setFailed(false);
-            setAttempt((value) => value + 1);
-          }}
-        >
+        <button className={`${secondaryClass} mt-5`} onClick={gate.retry}>
           Tentar novamente
         </button>
       </div>
     );
-  if (!session) return <p role="status">Verificando seu acesso...</p>;
+  if (gate.status === "checking") return <p role="status">Verificando seu acesso...</p>;
   return (
     <>
-      <WorkspaceNavigation session={session} />
-      {children(session)}
+      <WorkspaceNavigation session={gate.session} />
+      {children(gate.session)}
     </>
   );
 }

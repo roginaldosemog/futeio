@@ -2,6 +2,8 @@
 
 Decisão vigente: [ADR 0010](adr/0010-vercel-spark-blob-privado.md). Não ative Blaze para este piloto. App Hosting, Cloud Storage e TTL gerenciado não são usados em produção.
 
+O piloto foi publicado em [fute-io.vercel.app](https://fute-io.vercel.app), projeto Vercel `fute-io`, escopo Hobby `igor-gomes-projects`, com Firebase `fute-io`. O domínio próprio `fute.io` não foi comprado ou configurado. As publicações desta entrega foram feitas pela CLI a partir da branch `codex/website-firebase`; a integração de deploy automático por Git não está conectada. Fazer push no GitHub executa a CI, mas não publica sozinho na Vercel. Veja as [evidências e limitações](entregas/F2-google-spark-vercel.md).
+
 ## Contas e administrador
 
 1. No projeto Firebase, habilite Firestore Native e os provedores Authentication Google e e-mail/senha. Crie/confirme o único administrador e anote seu UID e e-mail.
@@ -40,6 +42,8 @@ Rules negam acesso direto do cliente ao Firestore. O Admin SDK usa IAM e exige a
 1. Configure todas as variáveis Production antes da primeira publicação.
 2. Em Authentication > Settings > Authorized domains, acrescente o hostname da produção Vercel, preservando os existentes. Confirme também Google habilitado. Se usar domínio próprio depois, atualize `APP_ORIGIN`, os domínios autorizados e publique novamente.
 3. Execute os checks do README e publique com a CLI autenticada: `pnpm dlx vercel@66.1.0 --prod`, com projeto/root directory previamente vinculados. Revise os arquivos incluídos; `.env.firebase`, `.firebase`, `.vercel`, caches e chaves não podem entrar no upload. A CLI não deve conectar um plano pago automaticamente.
+
+   No `.vercelignore`, `/api/` e `/mobile/` excluem somente workspaces antigos na raiz. Não use `api` sem ancoragem: esse padrão também exclui `web/src/app/api`. Confirme que o build publicado lista `/api/v1/[...path]` e `/api/maintenance`, além de testar os endpoints na URL real.
 4. Verifique login Google e e-mail/senha com o UID configurado, rejeição de outro UID, logout, link do jogador, edição de perfil/foto, avaliações e sorteio. Testes com emulador são evidência distinta do login real publicado.
 5. Confirme que o cron diário `/api/maintenance` está ativo no deployment de produção. A Vercel envia `Authorization: Bearer CRON_SECRET`; chamadas sem o segredo recebem 401. Não coloque o segredo na URL.
 

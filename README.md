@@ -2,6 +2,8 @@
 
 Branch `codex/website-firebase`: website da pelada piloto, com servidor no próprio Next.js. Publicação na Vercel Hobby, Firebase Spark para Auth/Firestore e Vercel Blob privado para fotos. A disponibilidade da publicação e os testes executados ficam registrados nas entregas; configuração preparada não significa publicação concluída.
 
+Piloto publicado: **[fute-io.vercel.app](https://fute-io.vercel.app)**. Login do administrador: [entrar](https://fute-io.vercel.app/entrar). A publicação e suas verificações estão na [entrega F2](docs/entregas/F2-google-spark-vercel.md).
+
 NestJS, PostgreSQL/Prisma e Expo permanecem nas branches anteriores. Dados e sessões antigos **não são migrados**. As decisões anteriores estão em `docs/history/`; não use os comandos históricos nesta branch.
 
 ## Rodar sem conta Firebase

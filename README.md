@@ -1,6 +1,6 @@
 # fute.io — website com Firebase
 
-Branch `codex/website-firebase`: somente o website da pelada piloto, com as telas do MVP e servidor no próprio Next.js. Preparado para Firebase Auth (administrador), Firestore (dados/sessões) e Storage (fotos privadas). Nenhum projeto real é criado, conectado ou publicado automaticamente.
+Branch `codex/website-firebase`: website da pelada piloto, com servidor no próprio Next.js. Publicação na Vercel Hobby, Firebase Spark para Auth/Firestore e Vercel Blob privado para fotos. A disponibilidade da publicação e os testes executados ficam registrados nas entregas; configuração preparada não significa publicação concluída.
 
 NestJS, PostgreSQL/Prisma e Expo permanecem nas branches anteriores. Dados e sessões antigos **não são migrados**. As decisões anteriores estão em `docs/history/`; não use os comandos históricos nesta branch.
 
@@ -27,13 +27,17 @@ Integração e E2E iniciam emuladores próprios `demo-futeio-test` e recusam por
 - `web/src/app`: interface e rotas REST Node em `api/v1`.
 - `web/src/server`: autorização, validação e operações Firebase; regras puras em `domain`.
 - `web/contracts/openapi.json`: contrato REST; `pnpm contracts:generate` gera os tipos locais.
-- `firebase/`: Rules privadas e índices/TTL.
+- `firebase/`: Rules privadas, índices e emuladores locais.
 - `scripts/`: testes isolados, seed sintético e contratos.
 
-O navegador não acessa diretamente Firestore ou Storage. As regras de avaliação, privacidade e sorteio continuam no servidor. pnpm conserva somente o workspace web; Turborepo fica restrito ao build para a integração de monorepos documentada pelo App Hosting.
+O navegador não acessa diretamente Firestore nem Blob. As regras de avaliação, privacidade e sorteio continuam no servidor. O Storage do Firebase é usado apenas pelo ambiente local de testes. pnpm conserva somente o workspace web; Turborepo executa o build.
 
-## Conectar depois
+O administrador pode entrar com Google ou e-mail/senha, sempre limitado ao UID/e-mail configurados. O Firebase Web SDK é usado apenas para autenticar com Google em memória e trocar o token pela sessão HttpOnly; os jogadores continuam pelos links. Veja [a decisão do login Google](docs/adr/0009-login-google-do-administrador.md).
 
-Siga [a configuração Firebase](docs/firebase.md). Ela cobre administrador/UID, variáveis, Rules, IAM, TTL, App Hosting e custos. App Hosting e Storage exigem Blaze; vinte usuários não garantem custo zero. Nenhum serviço pago foi ativado nesta entrega.
+## Publicar
 
-Veja [a decisão vigente](docs/adr/0008-website-firebase.md), [compatibilidade](docs/compatibilidade.md) e [evidências da entrega](docs/entregas/F1-website-firebase.md).
+Siga [a configuração Vercel + Firebase Spark](docs/firebase.md). Ela cobre credenciais de servidor, Blob privado, Google/e-mail, Rules e limpeza diária. O piloto utiliza as cotas gratuitas; limites podem suspender recursos. Não exige ativar Blaze.
+
+Veja [a decisão de hospedagem](docs/adr/0010-vercel-spark-blob-privado.md), [a migração Firebase](docs/adr/0008-website-firebase.md), [compatibilidade](docs/compatibilidade.md) e [evidências da entrega inicial](docs/entregas/F1-website-firebase.md).
+
+Login Google, preparação Spark/Vercel e verificações: [entrega F2](docs/entregas/F2-google-spark-vercel.md).

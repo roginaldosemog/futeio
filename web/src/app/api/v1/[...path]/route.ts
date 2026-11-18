@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { config, firebase } from "@/server/firebase";
 import { HttpError } from "@/server/context";
-import { csrfResponse, currentSession, loginAdministrator, logout, redeemPlayer, requireCsrf, rateLimit } from "@/server/access";
+import { csrfResponse, currentSession, loginAdministrator, loginAdministratorWithGoogle, logout, redeemPlayer, requireCsrf, rateLimit } from "@/server/access";
 import * as players from "@/server/players";
 import * as draws from "@/server/draws";
 
@@ -53,9 +53,10 @@ async function handle(request: Request, context: { params: Promise<{ path: strin
       return json(result.body, 200, result.cookie);
     }
     if (method !== "GET") await requireCsrf(request);
-    if (method === "POST" && ["auth/admin/login", "auth/player/redeem", "auth/logout"].includes(route)) {
+    if (method === "POST" && ["auth/admin/login", "auth/admin/google", "auth/player/redeem", "auth/logout"].includes(route)) {
       const result = route === "auth/logout" ? await logout(request)
         : route === "auth/admin/login" ? await loginAdministrator(request, await readBody(request))
+          : route === "auth/admin/google" ? await loginAdministratorWithGoogle(request, await readBody(request))
           : await redeemPlayer(request, await readBody(request));
       return json(result.body, 200, result.cookie);
     }

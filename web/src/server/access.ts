@@ -1,6 +1,7 @@
 import "server-only";
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { Timestamp } from "firebase-admin/firestore";
+import type { DecodedIdToken } from "firebase-admin/auth";
 import { ADMIN_ID, GROUP_ID, HttpError, fields, type Session } from "./context.ts";
 import { config, firebase } from "./firebase.ts";
 
@@ -135,13 +136,35 @@ export async function loginAdministrator(request: Request, input: unknown) {
   if (!result.ok) throw denied();
   const payload = await result.json() as { idToken?: string };
   if (!payload.idToken) throw denied();
-  const { auth, db } = firebase();
+  const { auth } = firebase();
   let decoded;
   try { decoded = await auth.verifyIdToken(payload.idToken, true); } catch { throw denied(); }
   if (decoded.uid !== settings.adminUid || decoded.email?.toLowerCase() !== email) throw denied();
+  return finishAdministratorLogin(request, decoded);
+}
+
+async function finishAdministratorLogin(request: Request, decoded: DecodedIdToken) {
+  const settings = config();
+  if (decoded.uid !== settings.adminUid || decoded.email?.toLowerCase() !== settings.adminEmail) throw new HttpError(401, "Conta não autorizada.");
+  const { db } = firebase();
   await db.doc(`groups/${GROUP_ID}/members/${ADMIN_ID}`).set({ identityId: ADMIN_ID, role: "ADMIN" }, { merge: true });
   const setCookie = await replaceSession(request, { role: "ADMIN", identityId: ADMIN_ID, groupId: GROUP_ID, authUid: decoded.uid, authTime: decoded.auth_time }, ADMIN_TTL);
-  return { body: { role: "ADMIN", identityId: ADMIN_ID, groupId: GROUP_ID, email }, cookie: setCookie };
+  return { body: { role: "ADMIN", identityId: ADMIN_ID, groupId: GROUP_ID, email: settings.adminEmail }, cookie: setCookie };
+}
+
+export async function loginAdministratorWithGoogle(request: Request, input: unknown) {
+  const body = fields(input, ["idToken"]);
+  if (typeof body.idToken !== "string" || !body.idToken || body.idToken.length > 16_384) throw new HttpError(400, "Dados inválidos.");
+  await rateLimit("admin-login", "shared", 10);
+  let decoded: DecodedIdToken;
+  try { decoded = await firebase().auth.verifyIdToken(body.idToken, true); }
+  catch { throw new HttpError(401, "Conta não autorizada."); }
+  const now = Math.floor(Date.now() / 1000);
+  if (decoded.firebase?.sign_in_provider !== "google.com" || !decoded.email_verified || !Number.isFinite(decoded.auth_time) || decoded.auth_time < now - 300 || decoded.auth_time > now + 60) {
+    throw new HttpError(401, "Entre novamente com Google.");
+  }
+  await rateLimit("admin-email", decoded.email?.toLowerCase() ?? "unknown", 5);
+  return finishAdministratorLogin(request, decoded);
 }
 
 export async function redeemPlayer(request: Request, input: unknown) {

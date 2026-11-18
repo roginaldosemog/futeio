@@ -1,76 +1,61 @@
-# Conectar ao Firebase depois
+# Publicação — Vercel Hobby + Firebase Spark + Blob privado
 
-Este guia não executa criação de recursos nem publicação. Use primeiro os emuladores conforme o README. Não reutilize credenciais sintéticas no ambiente real.
+Decisão vigente: [ADR 0010](adr/0010-vercel-spark-blob-privado.md). Não ative Blaze para este piloto. App Hosting, Cloud Storage e TTL gerenciado não são usados em produção.
 
-## Serviços e administrador
+## Contas e administrador
 
-1. Crie um projeto seu, habilite Blaze conscientemente e crie o **Cloud Firestore Standard, modo Native**, banco `(default)`. Escolha a região próxima do grupo antes de criar os dados.
-2. Habilite Authentication → E-mail/senha. Crie manualmente seu único administrador com senha forte exclusiva. Anote o UID exato e o e-mail. O website não oferece cadastro público; criar outra conta Auth não concede acesso ao grupo.
-3. Crie o bucket privado de Cloud Storage. Anote o nome real, sem `gs://`; não deduza o nome apenas do ID do projeto.
-4. Obtenha a Web API key da configuração do projeto. Restrições da chave devem permitir Identity Toolkit API. A chave identifica o projeto, não substitui autorização. A senha é enviada pelo servidor ao endpoint oficial de login e não é registrada em log.
+1. No projeto Firebase, habilite Firestore Native e os provedores Authentication Google e e-mail/senha. Crie/confirme o único administrador e anote seu UID e e-mail.
+2. Entre na Vercel com conta Hobby. Crie o projeto ligado a este repositório/branch, framework Next.js, Root Directory `web`, Node 24.x. Permita arquivos fora do Root Directory para usar o lockfile/workspace da raiz. Instalação: `pnpm install --frozen-lockfile`; build: `pnpm build` a partir de `web`.
+3. Crie um **Blob Store privado**, dedicado ao projeto, e conecte-o somente ao ambiente Production. A conexão fornece `BLOB_READ_WRITE_TOKEN`. Um store público não serve para este produto.
+4. Crie uma conta de serviço Firebase dedicada ao site, com `roles/datastore.user` e `roles/firebaseauth.viewer`. Não use Owner/Editor. Gere a chave JSON e configure-a como segredo de servidor na Vercel. Guarde a cópia local somente em local ignorado, nunca no Git/chat. Revogue a chave ao deixar de usá-la. Se a organização impedir chaves, use identidade federada em uma entrega específica; não relaxe a política.
 
-Jogadores não precisam de usuário Firebase. Compartilhe cada link pessoal em conversa privada. Revogue ou gere outro link pela administração em caso de exposição.
-
-## Configuração de runtime
+## Variáveis Production na Vercel
 
 | Variável | Valor |
 | --- | --- |
 | `FUTEIO_FIREBASE_MODE` | `production` |
-| `FIREBASE_PROJECT_ID` | ID real sem prefixo `demo-` |
-| `FIREBASE_STORAGE_BUCKET` | Nome real do bucket |
-| `FIREBASE_ADMIN_UID` | UID autorizado do Auth |
+| `FIREBASE_PROJECT_ID` | ID real do projeto |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | JSON completo da conta de serviço, segredo somente servidor |
+| `FIREBASE_ADMIN_UID` | UID exato do único administrador |
 | `ADMIN_EMAIL` | E-mail correspondente ao UID |
-| `FIREBASE_WEB_API_KEY` | Chave do projeto para Auth REST |
-| `APP_ORIGIN` | Origem HTTPS exata, sem barra final ou caminho |
-| `AUTH_SECRET` | Segredo aleatório novo, mínimo de 32 caracteres |
+| `FIREBASE_WEB_API_KEY` | API key Web Firebase (identificador público usado pelo Auth) |
+| `FIREBASE_WEB_APP_ID` | App ID Web registrado |
+| `AUTH_SECRET` | Aleatório, pelo menos 32 caracteres; não reutilizar emulador |
+| `APP_ORIGIN` | Origem HTTPS exata e estável da produção, sem barra final |
+| `BLOB_READ_WRITE_TOKEN` | Token do store Blob privado |
+| `CRON_SECRET` | Outro segredo aleatório de pelo menos 32 caracteres |
 
-Gere um segredo com `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"`. Guarde-o no Secret Manager/ambiente ignorado, nunca no Git ou chat. Não use `NEXT_PUBLIC_` nessas configurações. Remova as três variáveis de emulador em produção. Não há fallback para dados locais ou outro projeto.
+Não configure hosts de emulador, `STORAGE_EMULATOR_HOST` ou `FIREBASE_STORAGE_BUCKET` em produção. Não use prefixo `NEXT_PUBLIC_` para os segredos. A página de login recebe apenas a configuração pública necessária ao Firebase Auth. O SDK Web usa persistência em memória e sai após trocar o token Google por cookie HttpOnly. UID autorizado, credencial de serviço e segredos ficam no servidor.
 
-Remova também `STORAGE_EMULATOR_HOST` caso esteja definido; é um alias aceito pelo SDK de Storage. Em desenvolvimento ele deve corresponder exatamente ao host local configurado. Produção recusa esse alias.
+Previews devem ficar sem credenciais de produção. Para testes externos de previews, use projeto Firebase/store/segredos separados e domínio autorizado próprio. Não publique dados reais por engano em previews.
 
-O Admin SDK usa Application Default Credentials. No App Hosting, use a identidade do serviço, sem baixar JSON de chave. Em outro servidor, configure a credencial fora do repositório. Conceda permissões mínimas de leitura/escrita Firestore, consulta/verificação de usuários Auth e leitura/criação/exclusão de objetos no bucket. Não torne o bucket público para resolver erros de IAM.
+## Rules e índices Spark
 
-Confirme também que o bucket não tem concessões `allUsers` ou `allAuthenticatedUsers`. Rules privadas não compensam permissões públicas concedidas fora delas. Essa configuração de IAM não é simulada pelos testes locais.
+Execute `pnpm exec firebase deploy --project SEU_ID --only firestore:rules,firestore:indexes`. O alias padrão continua sendo um projeto demo para reduzir acidentes. Não faça deploy de Storage em produção.
 
-## Rules e TTL
+Rules negam acesso direto do cliente ao Firestore. O Admin SDK usa IAM e exige autorização nas rotas do servidor. Os índices simples de `expiresAt` atendem à limpeza; não há configuração TTL paga.
 
-Antes de disponibilizar o website, publique explicitamente no projeto escolhido:
+## Publicar e validar
 
-```sh
-pnpm exec firebase deploy --project SEU_PROJECT_ID --only firestore:rules,firestore:indexes,storage
-```
+1. Configure todas as variáveis Production antes da primeira publicação.
+2. Em Authentication > Settings > Authorized domains, acrescente o hostname da produção Vercel, preservando os existentes. Confirme também Google habilitado. Se usar domínio próprio depois, atualize `APP_ORIGIN`, os domínios autorizados e publique novamente.
+3. Execute os checks do README e publique com a CLI autenticada: `pnpm dlx vercel@66.1.0 --prod`, com projeto/root directory previamente vinculados. Revise os arquivos incluídos; `.env.firebase`, `.firebase`, `.vercel`, caches e chaves não podem entrar no upload. A CLI não deve conectar um plano pago automaticamente.
+4. Verifique login Google e e-mail/senha com o UID configurado, rejeição de outro UID, logout, link do jogador, edição de perfil/foto, avaliações e sorteio. Testes com emulador são evidência distinta do login real publicado.
+5. Confirme que o cron diário `/api/maintenance` está ativo no deployment de produção. A Vercel envia `Authorization: Bearer CRON_SECRET`; chamadas sem o segredo recebem 401. Não coloque o segredo na URL.
 
-Essa é uma ação futura, não executada por esta entrega. O alias versionado aponta apenas para `demo-futeio`. As Rules negam leitura/escrita direta, inclusive de contas Firebase Auth. O servidor usa IAM e verifica grupo, perfil e função. Não substitua Rules por acesso público ou apenas `request.auth != null`: membros com links não são contas Auth.
+A limpeza remove até 500 sessões e 500 registros de rate limit vencidos por dia. Usa precondição de versão para não apagar documentos alterados após a leitura. Expiração é validada em cada requisição mesmo se o cron atrasar/falhar. Falhas retornam 503 e geram evento genérico sem segredos. Se houver acúmulo, execute a rotina de forma autenticada e investigue antes de ampliar o limite. Fotos órfãs exigem reconciliação manual em janela sem uploads, confirmando que nenhum perfil referencia o objeto.
 
-Os índices incluem TTL para `sessions.expiresAt` e `rateLimits.expiresAt`. Confirme no Console que as políticas ficaram ativas. TTL é assíncrono, pode ter cobrança e não define a validade da sessão: o servidor confere expiração a cada requisição. Os emuladores não validam o agendador TTL real.
+## Operação e limites
 
-## App Hosting
+Há um grupo fixo; lista de até 500 perfis, vinte selecionados por sorteio e cinquenta sorteios recentes no histórico. O piloto é pessoal e não comercial, conforme Hobby. Consulte as cotas de Auth/Firestore/Vercel/Blob: o número de pessoas não garante disponibilidade dentro delas. Exceder limites gratuitos pode bloquear recursos. Não há promessa de uso ilimitado nem de métricas de impacto antes de medir.
 
-Esta aplicação é Next.js dinâmico; não é exportação estática. Use App Hosting, sem depender da integração experimental de frameworks do Firebase Hosting.
+Fotos privadas são lidas pelo servidor após validar associação ao grupo, sem URLs públicas e com resposta `private, no-store`. JPEG/PNG de até 2 MiB são reencodificados, reduzidos e têm metadados removidos. O Storage emulator é somente a implementação descartável de testes; produção sempre usa Blob privado e falha se faltar sua configuração.
 
-1. Conecte o repositório, escolha `codex/website-firebase`, diretório da aplicação **`web`**, Node **24** e pnpm **11.25.0**. A raiz mantém a identificação de workspace Turborepo, conforme a integração documentada.
-2. Substitua os placeholders em `web/apphosting.yaml`. Crie os segredos referenciados: `futeio-admin-uid`, `futeio-admin-email`, `futeio-auth-api-key`, `futeio-auth-secret`; conceda acesso à identidade de runtime. Essas variáveis são somente de runtime, sem credenciais reais no build.
-3. Mantenha inicialmente mínimo zero e máximo uma instância. A primeira requisição pode esperar inicialização. Escolha região compatível com Firestore/Storage quando possível; ajuste memória se houver necessidade medida.
-4. Faça um rollout de validação antes dos convites: login, cadastro/link de um participante sintético, notas, foto privada, sorteio e revogação. Confira acesso anônimo e conta Auth não autorizada.
+Defina exportação/backup antes de cadastrar dados importantes. PostgreSQL e sessões/links antigos não são importados; não apague o banco antigo. Desative/revogue o administrador no Auth em caso de comprometimento. Trocar UID ou credenciais exige atualizar variáveis e republicar. Um segundo administrador exige revisão do modelo.
 
-Build local e emuladores não comprovam IAM, restrições de chave, domínio, buildpack com as versões exatas ou deploy real. Esses pontos permanecem para o primeiro rollout.
+## Fontes oficiais (2026-11-18)
 
-App Hosting e Storage exigem Blaze. Configure alertas e acompanhe Firestore, Storage, Cloud Run, builds e logs. Alertas não interrompem gastos; máximo de uma instância não é teto de cobrança. Não há promessa de custo zero com vinte usuários. Nenhum recurso foi provisionado nesta entrega.
-
-## Dados e operação
-
-Há um grupo fixo no piloto. Até 500 perfis podem ser listados; cada sorteio escolhe vinte. O histórico lista cinquenta sorteios recentes. Backup/exportação de Firestore e fotos deve ser definido antes de usar dados reais.
-
-O PostgreSQL anterior não é importado. Sessões e links antigos não funcionam nesta arquitetura; não apague o banco antigo durante a transição. Se precisar transportar registros, planeje uma importação separada e validada antes dos convites.
-
-Uma falha ao remover foto antiga pode deixar objeto privado órfão. Para limpar: compare `players.photoPath` com os objetos, aguarde uma janela sem uploads e remova somente objetos sem referência confirmada. Não há limpeza automática que possa apagar uploads em andamento.
-
-Desative/revogue o administrador no Auth em caso de comprometimento e remova suas sessões no Console. Trocar o UID autorizado também exige atualizar variáveis/reiniciar a aplicação. Um segundo administrador exige revisão do modelo atual.
-
-## Fontes oficiais consultadas em 2026-11-17
-
-- [Admin SDK](https://firebase.google.com/docs/admin/setup) e [login Auth REST](https://firebase.google.com/docs/reference/rest/auth#section-sign-in-email-password).
-- [Emulator Suite](https://firebase.google.com/docs/emulator-suite/install_and_configure) e [projetos demo](https://firebase.google.com/docs/emulator-suite/connect_firestore).
-- [Índices/TTL](https://firebase.google.com/docs/reference/firestore/indexes) e [expiração TTL](https://firebase.google.com/docs/firestore/ttl).
-- [Frameworks e ferramentas](https://firebase.google.com/docs/app-hosting/frameworks-tooling), [monorepos](https://firebase.google.com/docs/app-hosting/monorepos) e [configuração App Hosting](https://firebase.google.com/docs/app-hosting/configure).
-- [Custos App Hosting](https://firebase.google.com/docs/app-hosting/costs) e [faturamento Storage](https://firebase.google.com/docs/storage/faqs-storage-changes-announced-sept-2024).
+- [Vercel Next.js](https://vercel.com/docs/frameworks/full-stack/nextjs), [monorepos](https://vercel.com/docs/monorepos), [Node](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions).
+- [Hobby](https://vercel.com/docs/plans/hobby), [Blob privado](https://vercel.com/docs/vercel-blob/private-storage), [SDK Blob](https://vercel.com/docs/vercel-blob/using-blob-sdk), [cotas Blob](https://vercel.com/docs/vercel-blob/usage-and-pricing).
+- [Cron Hobby](https://vercel.com/docs/cron-jobs/usage-and-pricing), [proteção de cron](https://vercel.com/docs/cron-jobs/manage-cron-jobs).
+- [Firebase Admin](https://firebase.google.com/docs/admin/setup), [cotas Firestore](https://firebase.google.com/docs/firestore/quotas), [Google login](https://firebase.google.com/docs/auth/web/google-signin).

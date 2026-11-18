@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
-import { TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD, TEST_ADMIN_UID } from '../web/test/admin-fixture.mjs';
+import { TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD, TEST_ADMIN_UID, TEST_GOOGLE_SUBJECT } from '../web/test/admin-fixture.mjs';
 const require = createRequire(new URL('../web/package.json', import.meta.url));
 
 export async function seedEmulator() {
@@ -15,6 +15,10 @@ export async function seedEmulator() {
   catch (error) {
     if (error.code !== 'auth/user-not-found') throw error;
     await auth.createUser({ uid: TEST_ADMIN_UID, email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD, emailVerified: true });
+  }
+  const user = await auth.getUser(TEST_ADMIN_UID);
+  if (!user.providerData.some((provider) => provider.providerId === 'google.com' && provider.uid === TEST_GOOGLE_SUBJECT)) {
+    await auth.updateUser(TEST_ADMIN_UID, { providerToLink: { providerId: 'google.com', uid: TEST_GOOGLE_SUBJECT, email: TEST_ADMIN_EMAIL } });
   }
   console.log('Synthetic administrator ready in the local emulator. Credentials: web/test/admin-fixture.mjs.');
 }

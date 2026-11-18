@@ -440,6 +440,22 @@
         ],
         "type": "object",
         "additionalProperties": false
+      },
+      "AdminGoogleLoginDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "idToken"
+        ],
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16384,
+            "writeOnly": true,
+            "description": "Fresh Firebase ID token from Google sign-in. Never persist or log."
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -1408,6 +1424,59 @@
         "tags": [
           "Evaluations"
         ]
+      }
+    },
+    "/api/v1/auth/admin/google": {
+      "post": {
+        "operationId": "AdministratorGoogleLogin",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-csrf-token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminGoogleLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "429": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Access"
+        ],
+        "summary": "Create an administrator cookie session from a verified Google sign-in"
       }
     }
   },

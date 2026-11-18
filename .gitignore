@@ -27,3 +27,5 @@ mobile/ios/
 *.log
 .env.firebase
 .emulator-data/
+.vercel/
+*.service-account.json

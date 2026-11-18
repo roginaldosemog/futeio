@@ -6,6 +6,7 @@ import type { components } from "../generated/api-types.ts";
 import { firebase, config } from "./firebase.ts";
 import { ADMIN_ID, GROUP_ID, HttpError, fields, integerRating, playerName, requireAdmin, requireId, type Session } from "./context.ts";
 import { calculateRating, discardedPerSide, RATING_CALCULATION_VERSION } from "./domain/calculate-rating.ts";
+import { savePhoto, readPhoto, deletePhoto as deleteStoredPhoto } from "./photos.ts";
 
 type Schemas = components["schemas"];
 type Player = {
@@ -201,7 +202,7 @@ async function normalizePhoto(value: unknown): Promise<Buffer> {
 }
 
 async function deletePhoto(path: string | undefined) {
-  if (path) await firebase().bucket.file(path).delete({ ignoreNotFound: true }).catch(() => undefined);
+  await deleteStoredPhoto(path).catch(() => undefined);
 }
 
 export async function uploadPhoto(session: Session, id: string, body: unknown): Promise<Schemas["PlayerProfileDto"]> {
@@ -210,11 +211,10 @@ export async function uploadPhoto(session: Session, id: string, body: unknown): 
   requireEdit(session, playerFrom(await reference.get()));
   const bytes = await normalizePhoto(input.data);
   const photoPath = `groups/${GROUP_ID}/players/${id}/${randomUUID()}.jpg`;
-  const { db, bucket } = firebase();
-  const object = bucket.file(photoPath);
+  const { db } = firebase();
   let result: { player: Player; previous?: string };
   try {
-    await object.save(bytes, { resumable: false, metadata: { contentType: "image/jpeg", cacheControl: "private, no-store" } });
+    await savePhoto(photoPath, bytes);
     result = await db.runTransaction(async (transaction) => {
       const player = playerFrom(await transaction.get(reference));
       requireEdit(session, player);
@@ -251,13 +251,7 @@ export async function getPhoto(session: Session, id: string): Promise<Buffer> {
   const reference = group(session).collection("players").doc(requireId(id));
   const player = playerFrom(await reference.get());
   if (!player.photoPath) throw new HttpError(404, "Foto não encontrada.");
-  try {
-    const [bytes] = await firebase().bucket.file(player.photoPath).download();
-    return bytes;
-  } catch (error) {
-    if ((error as { code?: number }).code === 404) throw new HttpError(404, "Foto não encontrada.");
-    throw error;
-  }
+  return readPhoto(player.photoPath);
 }
 
 async function changeLink(session: Session, id: string, rotate: boolean) {

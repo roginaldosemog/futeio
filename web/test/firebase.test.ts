@@ -1,13 +1,16 @@
 import { after, before, beforeEach, mock, test } from "node:test";
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
 import { deleteApp, getApps } from "firebase-admin/app";
 import { Timestamp } from "firebase-admin/firestore";
-import { config, firebase } from "../src/server/firebase.ts";
+import { config, firebase, emulatorBucket } from "../src/server/firebase.ts";
+import { authorizedMaintenance, removeExpiredRecords } from "../src/server/maintenance.ts";
 import { ADMIN_ID, GROUP_ID, HttpError, type Session } from "../src/server/context.ts";
-import { csrfResponse, currentSession, loginAdministrator, logout, redeemPlayer, requireCsrf, rateLimit, secretHash } from "../src/server/access.ts";
+import { csrfResponse, currentSession, loginAdministrator, loginAdministratorWithGoogle, logout, redeemPlayer, requireCsrf, rateLimit, secretHash } from "../src/server/access.ts";
 import * as players from "../src/server/players.ts";
 import * as draws from "../src/server/draws.ts";
-import { TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD } from "./admin-fixture.mjs";
+import { savePhoto, readPhoto, deletePhoto } from "../src/server/photos.ts";
+import { TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD, TEST_GOOGLE_SUBJECT } from "./admin-fixture.mjs";
 
 const origin = process.env.APP_ORIGIN!;
 const admin: Session = { role: "ADMIN", identityId: ADMIN_ID, groupId: GROUP_ID, email: TEST_ADMIN_EMAIL };
@@ -24,6 +27,17 @@ async function member(name = "Jogador sintético", rating = 7) {
   return { ...created, token, cookie: result.cookie, session: result.body };
 }
 
+// The official Auth emulator accepts synthetic IdP assertions, never real Google tokens.
+async function googleToken(subject = TEST_GOOGLE_SUBJECT, email = TEST_ADMIN_EMAIL) {
+  assert.equal(config().mode, "emulator");
+  const response = await fetch(`http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=demo-test-key`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ postBody: new URLSearchParams({ providerId: "google.com", id_token: JSON.stringify({ sub: subject, email, email_verified: true }) }).toString(), requestUri: origin, returnSecureToken: true }),
+  });
+  assert.equal(response.status, 200);
+  return (await response.json()).idToken as string;
+}
+
 before(async () => {
   assert.equal(config().projectId, "demo-futeio-test");
   await firebase().db.recursiveDelete(firebase().db.doc(`groups/${GROUP_ID}`));
@@ -32,6 +46,81 @@ beforeEach(async () => {
   await firebase().db.recursiveDelete(firebase().db.collection("rateLimits"));
 });
 after(async () => { await Promise.all(getApps().map(deleteApp)); });
+
+test("daily cleanup requires its own secret and removes only expired records", async () => {
+  const old = process.env.CRON_SECRET;
+  process.env.CRON_SECRET = "synthetic-maintenance-secret-only-for-tests-0000";
+  try {
+    assert.equal(authorizedMaintenance(request()), false);
+    assert.equal(authorizedMaintenance(new Request(origin, { headers: { authorization: "Bearer wrong" } })), false);
+    assert.equal(authorizedMaintenance(new Request(origin, { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } })), true);
+    const { db } = firebase();
+    for (const name of ["sessions", "rateLimits"]) {
+      await db.collection(name).doc("cleanup-expired").set({ expiresAt: Timestamp.fromMillis(Date.now() - 60_000) });
+      await db.collection(name).doc("cleanup-active").set({ expiresAt: Timestamp.fromMillis(Date.now() + 60_000) });
+    }
+    assert.ok((await removeExpiredRecords()).deleted >= 2);
+    for (const name of ["sessions", "rateLimits"]) {
+      assert.equal((await db.collection(name).doc("cleanup-expired").get()).exists, false);
+      assert.equal((await db.collection(name).doc("cleanup-active").get()).exists, true);
+      await db.collection(name).doc("cleanup-active").delete();
+    }
+  } finally {
+    if (old === undefined) delete process.env.CRON_SECRET;
+    else process.env.CRON_SECRET = old;
+  }
+});
+
+test("production photo adapter uses authenticated private Blob and rejects arbitrary URLs", async () => {
+  const keys = ["FUTEIO_FIREBASE_MODE", "FIREBASE_PROJECT_ID", "APP_ORIGIN", "FIREBASE_AUTH_EMULATOR_HOST", "FIRESTORE_EMULATOR_HOST", "FIREBASE_STORAGE_EMULATOR_HOST", "STORAGE_EMULATOR_HOST", "BLOB_READ_WRITE_TOKEN", "VERCEL_BLOB_RETRIES"];
+  const previous = new Map(keys.map((key) => [key, process.env[key]]));
+  const path = `groups/${GROUP_ID}/players/00000000-0000-4000-8000-000000000010/00000000-0000-4000-8000-000000000020.jpg`;
+  const calls: { url: URL; method: string; headers: Headers }[] = [];
+  // Blob uses its own Undici transport. Disable networking for the whole adapter test.
+  const { MockAgent, getGlobalDispatcher, setGlobalDispatcher } = createRequire(import.meta.resolve("@vercel/blob"))("undici");
+  const dispatcher = getGlobalDispatcher();
+  const agent = new MockAgent();
+  agent.disableNetConnect();
+  const api = agent.get("https://vercel.com");
+  for (const method of ["PUT", "POST"]) api.intercept({ path: /.*/, method }).reply(200, (options: { path: string; headers: Record<string, string> }) => {
+    calls.push({ url: new URL(options.path, "https://vercel.com"), method, headers: new Headers(options.headers) });
+    return { url: `https://syntheticstore.private.blob.vercel-storage.com/${path}`, pathname: path, contentType: "image/jpeg", contentDisposition: "inline", etag: "synthetic" };
+  });
+  setGlobalDispatcher(agent);
+  agent.get("https://syntheticstore.private.blob.vercel-storage.com").intercept({ path: /.*/, method: "GET" }).reply(200, (options: { path: string; headers: Record<string, string> }) => {
+    calls.push({ url: new URL(options.path, "https://syntheticstore.private.blob.vercel-storage.com"), method: "GET", headers: new Headers(options.headers) });
+    return Buffer.from([0xff, 0xd8]);
+  }, { headers: { "content-type": "image/jpeg" } });
+  try {
+    process.env.FUTEIO_FIREBASE_MODE = "production";
+    process.env.FIREBASE_PROJECT_ID = "synthetic-production";
+    process.env.APP_ORIGIN = "https://synthetic.example";
+    for (const key of keys.filter((key) => key.endsWith("EMULATOR_HOST"))) delete process.env[key];
+    process.env.BLOB_READ_WRITE_TOKEN = "vercel_blob_rw_syntheticstore_syntheticsecret";
+    process.env.VERCEL_BLOB_RETRIES = "0";
+    await savePhoto(path, Buffer.from([0xff, 0xd8]));
+    assert.deepEqual(await readPhoto(path), Buffer.from([0xff, 0xd8]));
+    await deletePhoto(path);
+    assert.equal(calls.length, 3);
+    assert.equal(calls[0]!.headers.get("x-vercel-blob-access"), "private");
+    assert.equal(calls[0]!.headers.get("x-allow-overwrite"), "0");
+    assert.equal(calls[1]!.url.hostname, "syntheticstore.private.blob.vercel-storage.com");
+    assert.equal(calls[1]!.url.searchParams.get("cache"), "0");
+    for (const call of calls) assert.equal(call.headers.get("authorization"), `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`);
+    await assert.rejects(readPhoto("https://attacker.example/photo.jpg"), /Invalid private photo path/);
+    assert.equal(calls.length, 3);
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+    await assert.rejects(readPhoto(path), /Configure the private Blob/);
+    assert.equal(calls.length, 3);
+  } finally {
+    setGlobalDispatcher(dispatcher);
+    await agent.close();
+    for (const [key, value] of previous) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
 
 test("configuration rejects incomplete emulator wiring and production emulator fallbacks", () => {
   const old = process.env.FIRESTORE_EMULATOR_HOST;
@@ -97,6 +186,47 @@ test("temporary Auth failures preserve the session for a later retry", async () 
   try { await assert.rejects(currentSession(request(login.cookie)), isStatus(503)); }
   finally { fault.mock.restore(); }
   assert.equal((await currentSession(request(login.cookie))).role, "ADMIN");
+});
+
+test("Google uses the configured UID and creates only the same opaque administrator session", async () => {
+  const initial = await anonymous();
+  const token = await googleToken();
+  const login = await loginAdministratorWithGoogle(request(initial.cookie), { idToken: token });
+  assert.equal(login.body.role, "ADMIN");
+  assert.equal((await currentSession(request(login.cookie))).identityId, ADMIN_ID);
+  assert.equal(login.cookie.includes(token), false);
+  const raw = login.cookie.split(";")[0]!.split("=")[1]!;
+  const row = await firebase().db.collection("sessions").doc(secretHash(raw)).get();
+  assert.equal(JSON.stringify(row.data()).includes(token), false);
+  await logout(request(login.cookie));
+});
+
+test("Google rejects another account, wrong providers, tampered and stale tokens", async () => {
+  const initial = await anonymous();
+  const other = await googleToken("unapproved-google-subject", "other-google@example.test");
+  await assert.rejects(loginAdministratorWithGoogle(request(initial.cookie), { idToken: other }), isStatus(401));
+  await assert.rejects(loginAdministratorWithGoogle(request(initial.cookie), { idToken: "tampered" }), isStatus(401));
+  const password = await fetch(`http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD, returnSecureToken: true }) });
+  await assert.rejects(loginAdministratorWithGoogle(request(initial.cookie), { idToken: (await password.json()).idToken }), isStatus(401));
+  const valid = await googleToken();
+  const parts = valid.split(".");
+  const foreign = { ...JSON.parse(Buffer.from(parts[1]!, "base64url").toString("utf8")), aud: "another-project", iss: "https://securetoken.google.com/another-project" };
+  const foreignToken = `${parts[0]}.${Buffer.from(JSON.stringify(foreign)).toString("base64url")}.${parts[2]}`;
+  await assert.rejects(loginAdministratorWithGoogle(request(initial.cookie), { idToken: foreignToken }), isStatus(401));
+  const verified = await firebase().auth.verifyIdToken(valid, true);
+  const fault = mock.method(firebase().auth, "verifyIdToken", async () => ({ ...verified, auth_time: Math.floor(Date.now() / 1000) - 601 }));
+  try { await assert.rejects(loginAdministratorWithGoogle(request(initial.cookie), { idToken: valid }), isStatus(401)); }
+  finally { fault.mock.restore(); }
+  await assert.rejects(currentSession(request(initial.cookie)), isStatus(401));
+});
+
+test("Google cannot rotate one anonymous session into two administrator sessions", async () => {
+  const initial = await anonymous();
+  const idToken = await googleToken();
+  const attempts = await Promise.allSettled([0, 1].map(() => loginAdministratorWithGoogle(request(initial.cookie), { idToken })));
+  assert.equal(attempts.filter((attempt) => attempt.status === "fulfilled").length, 1);
+  const rejected = attempts.find((attempt) => attempt.status === "rejected");
+  assert.ok(rejected && isStatus(401)(rejected.reason));
 });
 
 test("Firestore quotas stop attempts and expiry is enforced by the server", async () => {
@@ -220,7 +350,8 @@ test("draws use twenty selected participants and keep an immutable rating snapsh
 
 test("a lost Firestore commit acknowledgement never deletes the referenced photo", async () => {
   const owner = await member("Foto confirmada");
-  const { db, bucket } = firebase();
+  const { db } = firebase();
+  const bucket = emulatorBucket();
   const original = db.runTransaction.bind(db);
   const fault = mock.method(db, "runTransaction", async (...args: Parameters<typeof db.runTransaction>) => {
     await original(...args);

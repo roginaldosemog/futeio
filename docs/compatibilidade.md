@@ -1,20 +1,27 @@
 # Compatibilidade — branch Firebase
 
-Verificação em 2026-11-17. Versões exatas no lockfile; o primeiro rollout real ainda precisa ser validado.
+Verificação em 2026-11-18. Versões exatas no lockfile; o rollout real deve ser registrado separadamente dos testes locais.
 
 | Componente | Versão | Critério |
 | --- | --- | --- |
-| Node | 24.22.1, linha 24 | Admin SDK exige Node 22+; App Hosting documenta 22+ |
-| pnpm | 11.25.0 | Fixada; App Hosting documenta pnpm |
-| Next / React | 16.4.5 / 19.3.1 | Preservadas do website; App Hosting documenta Next 13.5+ |
+| Node | 24.22.1 local, linha 24 | Admin SDK exige Node 22+; Vercel configurada para 24.x |
+| pnpm | 11.25.0 | Fixada pelo packageManager; workspace/lockfile da raiz |
+| Next / React | 16.4.5 / 19.3.1 | Integração Next.js oficial da Vercel |
 | TypeScript | 5.9.3 | Strict/noEmit; regras testadas com suporte nativo do Node a TS |
 | Firebase Admin | 14.5.1 | Estável consultada no npm; somente servidor |
+| Firebase Web SDK | 13.4.0 | Estável verificada no npm em 2026-11-18; somente Auth/App para login Google |
 | Firebase CLI | 15.36.0 | Estável consultada no npm; desenvolvimento/testes |
 | Java | 21 | Exigência atual da CLI para emuladores; CI usa Temurin |
 | Sharp | 0.35.5 | Versão já usada para reencodificar fotos |
-| Turborepo | 2.11.10 | Restrito ao build para integração oficial App Hosting |
+| Vercel Blob SDK | 2.9.0 | Estável no npm; Node >=20; API privada somente no servidor |
+| Vercel CLI | 66.1.0 | Estável no npm; Node >=20; publicação via pnpm dlx |
+| Turborepo | 2.11.10 | Restrito ao build; nenhuma API/mobile nesta branch |
 | Playwright | 1.64.1 | Chrome instalado, sandbox ativa e conferida em runtime |
 
-Fontes: [Firebase Admin SDK](https://firebase.google.com/docs/admin/setup), manifests `firebase-admin` e `firebase-tools` no registry npm, [CLI/emuladores](https://firebase.google.com/docs/emulator-suite/install_and_configure), [App Hosting](https://firebase.google.com/docs/app-hosting/frameworks-tooling) e [monorepos](https://firebase.google.com/docs/app-hosting/monorepos). Suporte documentado não substitui a validação de uma publicação real.
+Fontes: [Firebase Admin SDK](https://firebase.google.com/docs/admin/setup), manifests oficiais no registry npm, [CLI/emuladores](https://firebase.google.com/docs/emulator-suite/install_and_configure), [Next.js na Vercel](https://vercel.com/docs/frameworks/full-stack/nextjs), [Node na Vercel](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions) e [SDK Blob](https://vercel.com/docs/vercel-blob/using-blob-sdk). Suporte documentado não substitui a validação de uma publicação real.
+
+O SDK Web Firebase fixa um transporte Node Firestore antigo. O override restrito `@firebase/firestore>@grpc/grpc-js: 1.14.6` aplica as correções oficiais [GHSA-m9gg-hp2v-232j](https://github.com/grpc/grpc-node/security/advisories/GHSA-m9gg-hp2v-232j) e [GHSA-f596-whhp-79r4](https://github.com/grpc/grpc-node/security/advisories/GHSA-f596-whhp-79r4), sem mudar versões principais. Esse transporte não é importado no login Web (somente App/Auth).
+
+O SDK Blob inclui `@vercel/cli-config` com Zod fixado em versão vulnerável. O override restrito `@vercel/cli-config>zod: 4.6.7` aplica a [correção oficial de limites de coleções](https://github.com/colinhacks/zod/pull/6652) da mesma versão principal. A auditoria de produção deve ser executada novamente a cada atualização do lockfile.
 
 Next foi atualizado de 16.4.4 para 16.4.5 após a auditoria apontar [GHSA-mfr8-8qww-v76h](https://github.com/vercel/next.js/security/advisories/GHSA-mfr8-8qww-v76h) e [GHSA-vc7v-qv4w-wrv8](https://github.com/vercel/next.js/security/advisories/GHSA-vc7v-qv4w-wrv8). A correção foi verificada nos avisos oficiais e nos manifests; React e o restante da interface foram preservados.

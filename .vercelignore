@@ -19,5 +19,6 @@ node_modules
 **/*.log
 **/*.tsbuildinfo
 .emulator-data
-api
-mobile
+# Legacy workspaces at the repository root, never web/src/app/api.
+/api/
+/mobile/

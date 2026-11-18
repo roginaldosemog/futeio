@@ -1,0 +1,7 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Photos are private. Admin SDK uses IAM; the server checks membership.
+    match /{object=**} { allow read, write: if false; }
+  }
+}

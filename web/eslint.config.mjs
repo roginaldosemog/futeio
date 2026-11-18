@@ -4,7 +4,7 @@ import baseConfig from '../eslint.config.mjs';
 
 export default [
   ...baseConfig,
-  { ignores: ['.next/**', 'out/**', 'next-env.d.ts'] },
+  { ignores: ['.next/**', '.next-validation/**', 'out/**', 'next-env.d.ts'] },
   {
     files: ['**/*.{js,jsx,ts,tsx}'],
     plugins: { '@next/next': nextPlugin, 'react-hooks': reactHooks },

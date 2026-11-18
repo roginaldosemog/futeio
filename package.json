@@ -3,33 +3,33 @@
   "version": "0.0.0",
   "private": true,
   "packageManager": "pnpm@11.25.0",
-  "engines": { "node": ">=24.22.1 <25", "pnpm": "11.25.0" },
+  "engines": {
+    "node": ">=24.22.1 <25",
+    "pnpm": "11.25.0"
+  },
   "scripts": {
-    "dev": "turbo run dev --parallel --filter=@futeio/api --filter=@futeio/web",
-    "dev:mobile": "pnpm --filter @futeio/mobile run dev",
+    "dev": "pnpm --filter @futeio/web dev",
     "build": "turbo run build",
-    "lint": "eslint scripts && turbo run lint",
-    "typecheck": "turbo run typecheck",
-    "test:unit": "node --test scripts/ports.test.mjs scripts/process-group.test.mjs scripts/web-config.test.mjs && turbo run test:unit --concurrency=1",
-    "test:integration": "turbo run test:integration",
-    "test:smoke": "node --env-file-if-exists=.env scripts/smoke.mjs",
-    "test:e2e": "node --env-file-if-exists=.env scripts/e2e.mjs",
+    "start": "pnpm --filter @futeio/web start",
+    "lint": "eslint scripts && pnpm --filter @futeio/web lint",
+    "typecheck": "pnpm --filter @futeio/web typecheck",
+    "test:unit": "node --test scripts/ports.test.mjs scripts/process-group.test.mjs scripts/web-config.test.mjs && node --conditions=react-server --test web/src/server/domain/*.test.ts && pnpm --filter @futeio/web test:unit",
+    "test:integration": "node scripts/firebase-test.mjs integration",
+    "test:e2e": "node scripts/firebase-test.mjs e2e",
     "contracts:generate": "node scripts/contracts.mjs --write",
     "contracts:check": "node scripts/contracts.mjs --check",
-    "admin:configure": "pnpm --filter @futeio/api run build && node api/scripts/configure-admin.cjs",
-    "db:generate": "pnpm --filter @futeio/api run db:generate",
-    "db:migrate": "pnpm --filter @futeio/api run db:migrate",
-    "db:test:migrate": "pnpm --filter @futeio/api run db:test:migrate",
-    "services:up": "docker compose up --detach --wait postgres postgres-test",
-    "services:down": "docker compose down",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:integration && pnpm build"
+    "firebase:emulators": "firebase emulators:start --project demo-futeio --only auth,firestore,storage",
+    "firebase:seed": "node --env-file-if-exists=.env.firebase scripts/seed-emulator.mjs",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm build && pnpm contracts:check && pnpm test:integration && pnpm test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "eslint": "10.14.0",
     "openapi-typescript": "7.13.0",
-    "turbo": "2.11.10",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.72.1"
-  }
+    "typescript-eslint": "8.72.1",
+    "firebase-tools": "15.36.0",
+    "turbo": "2.11.10"
+  },
+  "description": "Website privado da pelada, preparado para Firebase."
 }

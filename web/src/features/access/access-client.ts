@@ -1,4 +1,4 @@
-import type { components } from "@futeio/contracts";
+import type { components } from "@/generated/api-types";
 import { AccessError, apiMutation, apiRequest } from "@/lib/api-client";
 
 export { AccessError } from "@/lib/api-client";

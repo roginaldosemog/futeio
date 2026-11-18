@@ -1,5 +1,5 @@
 import { expect, test, type Page } from './fixtures';
-import { TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD } from '../../api/test/support/admin-fixture.mjs';
+import { TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD } from '../test/admin-fixture.mjs';
 
 test.use({ actionTimeout: 15_000 });
 

@@ -1,4 +1,4 @@
-import type { components } from "@futeio/contracts";
+import type { components } from "@/generated/api-types";
 import { apiMutation, apiRequest } from "@/lib/api-client";
 
 export type Draw = components["schemas"]["DrawDto"];

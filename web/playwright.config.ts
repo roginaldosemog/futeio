@@ -20,5 +20,5 @@ export default defineConfig({
       launchOptions: { chromiumSandbox: true },
     },
   }],
-  // The E2E orchestrator owns both isolated servers and must not reuse a running app.
+  // The orchestrator owns an isolated website and Firebase emulators; never reuse a running app.
 });

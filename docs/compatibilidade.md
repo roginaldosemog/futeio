@@ -1,131 +1,20 @@
-# Matriz de compatibilidade — Web, API e mobile
+# Compatibilidade — branch Firebase
 
-Consulta: 02/11/2026. Esta matriz registra a seleção, os ajustes de compatibilidade e a homologação local da E1. As dependências diretas são fixadas e o lockfile registra a árvore resolvida. Verificações de produção remota e uso pelo grupo não estão incluídas.
+Verificação em 2026-11-17. Versões exatas no lockfile; o primeiro rollout real ainda precisa ser validado.
 
-Atualização E2: 03/11/2026. O baseline Node **24.22.1** foi preservado. As novas dependências abaixo foram conferidas nos manifests e metadados primários das versões publicadas. Instalação com peers estritos, verificações integradas, builds e navegador passaram localmente; ver o relatório da entrega.
-
-| Componente | Versão selecionada | Critério |
+| Componente | Versão | Critério |
 | --- | --- | --- |
-| Node.js | 24.22.1 | Linha LTS suportada; disponível no ambiente e compatível com Next, Nest e Prisma 7 |
-| pnpm | 11.25.0 | Linha JavaScript estável já disponível; versão fixada em packageManager |
-| Turborepo | 2.11.10 | Release estável consultada no registro oficial |
-| Next.js / @next/eslint-plugin-next | 16.4.4 | Mesma versão; Node mínimo declarado 20.9 |
-| React / React DOM | 19.3.1 | Par de mesma versão, aceito pelos peers do Next |
-| Nest common/core/platform-express/testing | 12.3.2 | Mesma versão; Node mínimo declarado 20 |
-| Prisma CLI/client/adapter-pg | 7.10.1 | Conjunto estável correspondente; CLI 8 RC rejeitado |
-| PostgreSQL | 18.6 | Minor estável atual da linha 18, suportada pelo Prisma 7 |
-| pg | 8.23.1 | Driver PostgreSQL, compatível com o adapter |
-| TypeScript | 5.9.3 | Estável e aceito por Next/Nest/Prisma, typescript-eslint e ts-jest |
-| Tailwind / PostCSS plugin | 4.3.3 | Mesma versão; estilos da web |
-| ESLint / @eslint/js | 10.14.0 / 10.0.1 | Linha mantida; plugin oficial do Next, regras de Hooks e TypeScript compatíveis |
-| eslint-plugin-react-hooks | 7.1.1 | Peer declara suporte ao ESLint 10 |
-| typescript-eslint | 8.72.1 | Peer TypeScript >=4.8.4 e <6.1; aceita ESLint 10 |
-| Jest / ts-jest | 30.5.2 / 29.4.15 | ts-jest declara suporte a Jest 30 e TypeScript <7 |
-| Supertest | 7.3.1 | Integração HTTP da API |
-| Tipos Node / React / React DOM | 24.19.2 / 19.3.0 / 19.3.0 | Linhas correspondentes aos runtimes escolhidos |
+| Node | 24.22.1, linha 24 | Admin SDK exige Node 22+; App Hosting documenta 22+ |
+| pnpm | 11.25.0 | Fixada; App Hosting documenta pnpm |
+| Next / React | 16.4.5 / 19.3.1 | Preservadas do website; App Hosting documenta Next 13.5+ |
+| TypeScript | 5.9.3 | Strict/noEmit; regras testadas com suporte nativo do Node a TS |
+| Firebase Admin | 14.5.1 | Estável consultada no npm; somente servidor |
+| Firebase CLI | 15.36.0 | Estável consultada no npm; desenvolvimento/testes |
+| Java | 21 | Exigência atual da CLI para emuladores; CI usa Temurin |
+| Sharp | 0.35.5 | Versão já usada para reencodificar fotos |
+| Turborepo | 2.11.10 | Restrito ao build para integração oficial App Hosting |
+| Playwright | 1.64.1 | Chrome instalado, sandbox ativa e conferida em runtime |
 
-## Adições de E2
+Fontes: [Firebase Admin SDK](https://firebase.google.com/docs/admin/setup), manifests `firebase-admin` e `firebase-tools` no registry npm, [CLI/emuladores](https://firebase.google.com/docs/emulator-suite/install_and_configure), [App Hosting](https://firebase.google.com/docs/app-hosting/frameworks-tooling) e [monorepos](https://firebase.google.com/docs/app-hosting/monorepos). Suporte documentado não substitui a validação de uma publicação real.
 
-| Dependência | Versão | Compatibilidade declarada/uso |
-| --- | --- | --- |
-| @nestjs/swagger | 12.1.0 | Nest common/core ^12, TypeScript ^5.5 ou ^6; Node ^20.19 ou >=22.12; contrato e Swagger |
-| class-validator / class-transformer | 0.15.1 / 0.5.1 | Validação e transformação dos DTOs; versões aceitas pelos peers do Swagger selecionado |
-| openapi-typescript | 7.13.0 | Peer TypeScript ^5.x, atendido por 5.9.3; geração dos tipos consumidos pela web |
-| @testing-library/react | 16.3.3 | React/React DOM ^18 ou ^19 e DOM ^10; Node >=18 |
-| @testing-library/dom | 10.4.2 | Node >=18; base dos testes de interação |
-| @testing-library/user-event | 14.6.8 | DOM >=7.21.4 e Node >=12 |
-| @testing-library/jest-dom | 7.0.1 | DOM >=10 e <11; Node >=22 |
-| jest-environment-jsdom | 30.5.2 | Alinhado ao Jest 30.5.2; Node 24 aceito |
-| @playwright/test | 1.64.1 | Node >=20; navegador administrativo e verificações próprias da jornada |
-
-Não há novo pacote de hashing: scrypt e HMAC usam `node:crypto` do runtime fixado. A consulta à documentação da linha Node 24 não autoriza atualização para outro patch. Resend está adiado; seu adaptador não está conectado ao módulo de acesso e E2 não depende de SDK ou chave do serviço.
-
-Os metadados primários foram consultados em `https://registry.npmjs.org/<pacote>/<versão>` para as versões acima. Peers satisfeitos e metadados compatíveis são pré-condições; não substituem testes e builds integrados.
-
-## Adição de E3
-
-`@tanstack/react-query` **5.105.3**, com `@tanstack/query-core` **5.105.3** no lockfile. A lista e o cadastro de jogadores são os primeiros consumidores: consulta, invalidação após criação e estados de carregamento/erro. A mutação não tem retry automático. O QueryClient pertence à página privada e é limpo ao desmontar; o link não entra no cache de consultas.
-
-A [documentação oficial](https://tanstack.com/query/latest/docs/framework/react/installation) declara suporte a React 18+; os metadados da versão no registro npm declaram React e tipos React `^18 || ^19`, atendidos pela baseline. A instalação preservou as versões existentes e acrescentou somente esses dois pacotes, fixados. As exclusões de idade adicionadas pelo pnpm referem-se somente a essas versões verificadas, como registrado no lockfile/configuração.
-
-O gerador de contratos usa `--default-non-nullable false`: propriedades de entrada opcionais continuam opcionais mesmo quando a API fornece um valor padrão. O DTO Swagger declara explicitamente o booleano de vínculo administrativo. Ver [opções oficiais do openapi-typescript](https://openapi-ts.dev/cli#flags).
-
-## Adição para fotos privadas
-
-`sharp` **0.35.5** passou a ser dependência direta da API, com versão exata. O [changelog oficial](https://sharp.pixelplumbing.com/changelog/v0.35.5/) apresenta essa release estável, e os metadados `pnpm view sharp version engines --json` retornaram 0.35.5 e Node `>=20.9.0`, compatível com 24.22.1. O pacote já estava no lockfile como dependência opcional do Next; a instalação não atualizou os frameworks nem a versão resolvida do sharp. O processamento da API agora exige a biblioteca diretamente.
-
-O uso segue a [instalação oficial](https://sharp.pixelplumbing.com/install/) e as [opções de saída](https://sharp.pixelplumbing.com/api-output/): decodificar a imagem, limitar pixels e tamanho, reduzir e recodificar sem conservar metadados. A dependência nativa precisa passar no Windows local e no GitHub/Ubuntu antes de fechar a validação da entrega.
-
-Os limites de PostgreSQL permanecem distintos: até cinco segundos para abrir conexão e um segundo para executar consulta, pool máximo de cinco, sem retries automáticos. A separação segue os parâmetros oficiais de [pg.Pool](https://node-postgres.com/apis/pool) e [pg.Client](https://node-postgres.com/apis/client); a motivação e a verificação estão no plano de conclusão do MVP.
-
-## Decisões de compatibilidade
-
-1. Não instalar `prisma@latest`: a tag consultada aponta para `8.0.0-rc.29`, com fluxo diferente. A documentação do Nest orienta explicitamente Prisma 7 para migrations e geração deste desenho.
-2. Não instalar `typescript@latest`: a tag consultada aponta para 7.0.2, fora dos peers do lint e do transformador de testes escolhidos. 5.9.3 atende à interseção documentada.
-3. Nest é compilado em CommonJS, com resolução NodeNext e `moduleFormat = "cjs"` explícito na geração do Prisma. Isso evita `import.meta` de um cliente ESM num processo CommonJS.
-4. PostgreSQL 19 está em RC na consulta; a E1 usa 18.6 estável. No contêiner 18, persistir `/var/lib/postgresql`, conforme a imagem oficial.
-5. A configuração completa `eslint-config-next` traz plugins de importação, React e acessibilidade limitados ao ESLint 9. A linha 9 foi testada na resolução, mas descartada por estar fora de suporte desde 06/08/2026. A seleção final mantém ESLint 10 e usa diretamente o plugin oficial do Next, regras de Hooks e TypeScript; não força os peers dos plugins antigos. Acessibilidade continua exigindo verificação da interface, não apenas lint.
-6. Node 26 e pnpm 12 existem, mas não são necessários para esta entrega. Usar a linha LTS 24 e pnpm 11 já disponíveis reduz variação entre o ambiente validado e a CI. Atualizações posteriores exigem executar novamente as verificações.
-7. Mobile e suas dependências não serão instalados em E1. A compatibilidade Expo/React Native será verificada na entrega mobile.
-8. Scripts de instalação são permitidos por pacote na lista `allowBuilds`, incluindo o watcher nativo de desenvolvimento. As exceções de idade mínima são limitadas às versões exatas do Next escolhido e seus artefatos correspondentes; não há liberação global de versões recentes ou scripts desconhecidos.
-9. Nest 12 publica ESM. O código da API e o cliente Prisma são CommonJS e usam o suporte nativo `require(esm)` do Node 24.22.1. No Jest, os scripts habilitam `--experimental-vm-modules` conforme sua documentação; a limitação experimental fica restrita ao runner de testes, não à inicialização da API. Build e execução real são verificações separadas dos testes.
-10. O cliente Prisma gerado referencia imports relativos `.js`; no Jest, o mapper resolve esses imports para as fontes TypeScript. Produção usa os arquivos JavaScript compilados normalmente.
-11. O build Next observado propaga opções do processo pai para workers, que rejeitam `--env-file-if-exists` em `NODE_OPTIONS`. A web usa comandos Next diretos e `process.loadEnvFile` na configuração, com pacote ESM explícito. A API continua carregando seu ambiente pelo Node; seu modo watch e o binário compilado foram verificados.
-
-## Fontes oficiais
-
-Referências de E2: [OpenAPI no Nest](https://docs.nestjs.com/openapi/introduction), [crypto na linha Node 24](https://nodejs.org/docs/latest-v24.x/api/crypto.html), [armazenamento de senhas OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html) e [CSRF OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html). Parâmetros e limites específicos implementados estão no ADR 0002; não são uma certificação de segurança.
-
-- [Node: linhas LTS](https://nodejs.org/en/about/previous-releases).
-- [Next: instalação e requisitos](https://nextjs.org/docs/app/getting-started/installation).
-- [Next: configuração direta do plugin ESLint](https://nextjs.org/docs/app/api-reference/config/eslint), [suporte do ESLint](https://eslint.org/version-support/) e [ESM no Jest](https://jestjs.io/docs/ecmascript-modules).
-- [Nest: receita Prisma, versão 7 e CommonJS](https://docs.nestjs.com/recipes/prisma).
-- [Prisma: requisitos](https://www.prisma.io/docs/orm/v7/reference/system-requirements) e [PostgreSQL 18 suportado](https://www.prisma.io/docs/orm/v7/reference/supported-databases).
-- [PostgreSQL: versões suportadas](https://www.postgresql.org/support/versioning/) e [imagem oficial](https://github.com/docker-library/docs/blob/master/postgres/README.md).
-- [pnpm: instalação](https://pnpm.io/installation) e [configuração](https://pnpm.io/settings).
-- Metadados primários dos pacotes publicados: `https://registry.npmjs.org/<pacote>/<versão>`, incluindo `engines` e `peerDependencies`; versões RC foram excluídas da seleção.
-
-## Ambiente de verificação
-
-Windows x64 com Node 24.22.1 e pnpm 11.25.0. Docker e WSL não estão instalados. Para executar testes reais de PostgreSQL localmente, será usado um cluster portátil em cache externo ao repositório, obtido do distribuidor indicado pelo site oficial, sem instalar serviço Windows. A imagem Compose e o serviço da CI permanecem PostgreSQL 18.6.
-
-A configuração Compose foi validada com a CLI oficial Docker Compose 5.7.0. A ausência do Docker Engine impede afirmar que os contêineres foram executados neste computador. A CI está configurada, mas não executada no GitHub enquanto os commits não forem enviados.
-
-Homologação local: instalação com `--frozen-lockfile`, `pnpm peers check`, geração Prisma, migrations nos dois bancos, `pnpm verify` e `pnpm test:smoke` terminaram com exit code 0. O audit de dependências de produção não encontrou vulnerabilidades conhecidas na consulta. Esses resultados não representam desempenho, adoção ou impacto do produto.
-
-## Mobile M1 — 04/11/2026
-
-A versão mobile mantém Node 24.22.1 e pnpm 11.25.0. As versões foram conferidas no registro oficial, no conjunto de módulos do SDK58 e pela checagem real do Expo.
-
-| Componente | Versão | Motivo |
-| --- | --- | --- |
-| Expo | 58.0.23 | Release estável da linha SDK58 |
-| React Native | 0.88.1 | Versão do conjunto suportado pelo SDK58 |
-| React / React DOM mobile | 19.3.0 | Par compatível com Expo; a web preserva 19.3.1 |
-| Expo Router | 58.0.30 | Navegação nativa e rotas por arquivos |
-| SecureStore | 58.0.2 | Credencial opaca no armazenamento seguro do aparelho |
-| Expo Network / System UI | 58.0.4 / 58.0.7 | Conectividade das consultas e tema automático |
-| TanStack Query | 5.105.3 | Mesma versão da web, sem persistência de respostas privadas |
-| TypeScript mobile | 6.0.3 | Versão esperada pela checagem do SDK58 |
-| Jest / Jest Expo | 30.5.2 / 58.0.14 | Preset oficial do SDK e runner já adotado |
-| React Native Testing Library / test-renderer | 14.1.0 / 1.3.0 | RNTL14 usa APIs assíncronas e o novo renderer |
-
-O TypeScript5.9.3 passou na checagem de tipos inicial do mobile, mas o comando oficial Expo install --check exige ~6.0.3. A versão6.0.3 ficou restrita ao mobile; raiz, API, web e gerador OpenAPI continuam em5.9.3. O override do pnpm passou a selecionar somente versões abaixo de6. Não existe override global de React.
-
-Com autoInstallPeers:false e validação estrita, Router/Drawer/Worklets exigiram Gesture Handler3.3.0, Reanimated4.7.1, Worklets0.13.0 e Metro Config0.88.1. São dependências do conjunto publicado, sem introduzir uma função de produto só para utilizá-las. Babel Runtime7.29.10 é direto para os helpers emitidos pelo preset em instalações isoladas. React DOM19.3.0 resolve o peer do Router sem misturar o React da web no app. Não houve ativação global de hoisting ou instalação automática de peers.
-
-As 22 exceções de idade acrescentadas pelo pnpm são limitadas a versões exatas do conjunto Expo resolvido. Os manifests foram conferidos no registry oficial: todas são releases sem sufixo prerelease, possuem integridade publicada e não declaram engines incompatíveis com Node24.22.1. Isso não substitui testes, auditoria de segurança ou homologação em aparelho.
-
-Metro usa expo/metro-config com a detecção automática do workspace, sem aliases entre React web e nativo. Os contratos compartilhados exportam somente tipos gerados. O cliente HTTP importa expo/fetch explicitamente, omite cookies e bloqueia redirects; a política Cache-Control:no-store permanece responsabilidade da API.
-
-Fontes: [release SDK58](https://expo.dev/changelog/sdk-58), [conjunto oficial de módulos SDK58](https://raw.githubusercontent.com/expo/expo/sdk-58/packages/expo/bundledNativeModules.json), [monorepos no Expo](https://docs.expo.dev/guides/monorepos/), [Expo Fetch](https://docs.expo.dev/versions/latest/sdk/expo/#expofetch-api), [SecureStore](https://docs.expo.dev/versions/latest/sdk/securestore/), [RNTL14](https://oss.callstack.com/react-native-testing-library/docs/start/quick-start), [Jest Expo](https://raw.githubusercontent.com/expo/expo/sdk-58/packages/jest-expo/package.json), [overrides no pnpm](https://pnpm.io/settings/dependency-resolution#overrides) e manifests exatos em https://registry.npmjs.org/NOME/VERSAO.
-
-A exportação Android/iOS produz bundles Hermes; não é uma compilação dos binários nativos nem demonstra instalação ou execução em Android/iPhone. A validação nativa é o primeiro passo da continuidade no Mac, descrito em [mobile/README.md](../mobile/README.md).
-
-## Mobile M2/M3 — fotos e peers
-
-ImagePicker **58.0.10**, ImageManipulator **58.0.16** e FileSystem **58.0.13** foram selecionados pelo conjunto oficial do SDK58 e conferidos na documentação/registro. O cliente usa a API contextual do manipulador, com decodificação limitada, JPEG/base64 e remoção somente do arquivo novo. **base64-js 1.5.1** é uma dependência direta pequena para converter a resposta JPEG privada em memória sem polyfill de Buffer.
-
-O override TypeScript@<6 de M1 foi removido: ele reescrevia os peers amplos ^5/6/7 de @expo/require-utils e >=5.8 de 2g para 5.9.3, entrando em conflito com o mobile 6.0.3. As versões diretas de cada pacote continuam fixadas e os peers estritos passaram, sem suppressões. Não houve atualização dos frameworks web/API.
-
-As novas funções de arquivo, seletor e Share exigem recompilar e homologar o aplicativo em ambiente nativo. Exportação de JavaScript e introspecção CNG não substituem essa validação. Fontes e limites estão no [relatório M2/M3](entregas/M2-M3-mobile.md).
+Next foi atualizado de 16.4.4 para 16.4.5 após a auditoria apontar [GHSA-mfr8-8qww-v76h](https://github.com/vercel/next.js/security/advisories/GHSA-mfr8-8qww-v76h) e [GHSA-vc7v-qv4w-wrv8](https://github.com/vercel/next.js/security/advisories/GHSA-vc7v-qv4w-wrv8). A correção foi verificada nos avisos oficiais e nos manifests; React e o restante da interface foram preservados.

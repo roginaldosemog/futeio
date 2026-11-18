@@ -1,15 +1,14 @@
 {
-  "$schema": "https://turborepo.dev/schema.json",
-  "globalDependencies": [".env", ".node-version"],
-  "globalEnv": ["API_ORIGIN", "EXPO_PUBLIC_API_URL", "EXPO_PUBLIC_WEB_URL"],
-  "globalPassThroughEnv": ["DATABASE_URL", "TEST_DATABASE_URL", "API_PORT", "API_HOST", "NODE_ENV", "CI", "ADMIN_EMAIL", "ADMIN_PASSWORD_HASH", "AUTH_SECRET", "APP_ORIGIN"],
+  "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "db:generate": { "cache": false },
-    "build": { "dependsOn": ["^build", "db:generate"], "outputs": ["dist/**", ".next/**", "!.next/cache/**"] },
-    "dev": { "dependsOn": ["db:generate"], "cache": false, "persistent": true },
-    "lint": { "outputs": [] },
-    "typecheck": { "dependsOn": ["db:generate"], "cache": false },
-    "test:unit": { "dependsOn": ["db:generate"], "cache": false },
-    "test:integration": { "dependsOn": ["db:generate"], "cache": false }
+    "build": {
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**"
+      ],
+      "env": [
+        "NEXT_TELEMETRY_DISABLED"
+      ]
+    }
   }
 }

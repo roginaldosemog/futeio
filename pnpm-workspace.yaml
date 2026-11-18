@@ -1,56 +1,29 @@
 packages:
-  - api
   - web
-  - mobile
-  - packages/*
 
 saveExact: true
 engineStrict: true
 autoInstallPeers: false
 allowBuilds:
+  '@firebase/util': false
+  protobufjs: true
+  re2: true
   '@scarf/scarf': false
-  '@nestjs/core': true
   '@parcel/watcher': true
-  '@prisma/engines': true
-  prisma: true
   sharp: true
   unrs-resolver: true
 
 minimumReleaseAgeExclude:
-  - '@next/env@16.4.4'
-  - '@next/eslint-plugin-next@16.4.4'
-  - '@next/swc-darwin-arm64@16.4.4'
-  - '@next/swc-darwin-x64@16.4.4'
-  - '@next/swc-linux-arm64-gnu@16.4.4'
-  - '@next/swc-linux-arm64-musl@16.4.4'
-  - '@next/swc-linux-x64-gnu@16.4.4'
-  - '@next/swc-linux-x64-musl@16.4.4'
-  - '@next/swc-win32-arm64-msvc@16.4.4'
-  - '@next/swc-win32-x64-msvc@16.4.4'
-  - next@16.4.4
-  - '@nestjs/mapped-types@12.0.1'
-  - '@nestjs/swagger@12.1.0'
+  - '@next/env@16.4.5'
+  - '@next/eslint-plugin-next@16.4.5'
+  - '@next/swc-darwin-arm64@16.4.5'
+  - '@next/swc-darwin-x64@16.4.5'
+  - '@next/swc-linux-arm64-gnu@16.4.5'
+  - '@next/swc-linux-arm64-musl@16.4.5'
+  - '@next/swc-linux-x64-gnu@16.4.5'
+  - '@next/swc-linux-x64-musl@16.4.5'
+  - '@next/swc-win32-arm64-msvc@16.4.5'
+  - '@next/swc-win32-x64-msvc@16.4.5'
+  - next@16.4.5
   - '@tanstack/query-core@5.105.3'
   - '@tanstack/react-query@5.105.3'
-  - '@expo/cli@58.1.19'
-  - '@expo/config-plugins@58.0.12'
-  - '@expo/config@58.0.11'
-  - '@expo/env@2.5.4'
-  - '@expo/fingerprint@0.21.9'
-  - '@expo/inline-modules@0.2.9'
-  - '@expo/local-build-cache-provider@58.0.11'
-  - '@expo/log-box@58.0.15'
-  - '@expo/metro-config@58.0.21'
-  - '@expo/metro-runtime@58.0.17'
-  - '@expo/prebuild-config@58.0.19'
-  - '@expo/router-server@58.0.21'
-  - babel-preset-expo@58.0.24
-  - expo-asset@58.0.20
-  - expo-constants@58.0.15
-  - expo-linking@58.0.16
-  - expo-modules-autolinking@58.0.17
-  - expo-modules-core@58.0.30
-  - expo-modules-jsi@58.0.22
-  - expo-router@58.0.30
-  - expo@58.0.23
-  - jest-expo@58.0.14

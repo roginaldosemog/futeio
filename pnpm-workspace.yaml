@@ -33,3 +33,6 @@ overrides:
   "@firebase/firestore>@grpc/grpc-js": 1.14.6
   # CLI-config is pulled by Blob authentication; patch its pinned Zod 4 transport.
   "@vercel/cli-config>zod": 4.6.7
+
+patchedDependencies:
+  jwks-rsa@4.1.0: patches/jwks-rsa@4.1.0.patch

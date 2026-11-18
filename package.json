@@ -13,7 +13,7 @@
     "start": "pnpm --filter @futeio/web start",
     "lint": "eslint scripts && pnpm --filter @futeio/web lint",
     "typecheck": "pnpm --filter @futeio/web typecheck",
-    "test:unit": "node --test scripts/ports.test.mjs scripts/process-group.test.mjs scripts/web-config.test.mjs && node --conditions=react-server --test web/src/server/domain/*.test.ts && pnpm --filter @futeio/web test:unit",
+    "test:unit": "node --test scripts/ports.test.mjs scripts/process-group.test.mjs scripts/web-config.test.mjs scripts/firebase-module.test.mjs && node --conditions=react-server --test web/src/server/domain/*.test.ts && pnpm --filter @futeio/web test:unit",
     "test:integration": "node scripts/firebase-test.mjs integration",
     "test:e2e": "node scripts/firebase-test.mjs e2e",
     "contracts:generate": "node scripts/contracts.mjs --write",

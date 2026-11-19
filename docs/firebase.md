@@ -2,7 +2,7 @@
 
 Decisão vigente: [ADR 0010](adr/0010-vercel-spark-blob-privado.md). Não ative Blaze para este piloto. App Hosting, Cloud Storage e TTL gerenciado não são usados em produção.
 
-O piloto foi publicado em [fute-io.vercel.app](https://fute-io.vercel.app), projeto Vercel `fute-io`, escopo Hobby `igor-gomes-projects`, com Firebase `fute-io`. O domínio próprio `fute.io` não foi comprado ou configurado. As publicações desta entrega foram feitas pela CLI a partir da branch `codex/website-firebase`; a integração de deploy automático por Git não está conectada. Fazer push no GitHub executa a CI, mas não publica sozinho na Vercel. Veja as [evidências e limitações](entregas/F2-google-spark-vercel.md).
+O piloto foi publicado em [fute-io.vercel.app](https://fute-io.vercel.app), projeto Vercel `fute-io`, escopo Hobby `igor-gomes-projects`, com Firebase `fute-io`. O domínio próprio `fute.io` não foi comprado ou configurado. A versão inicial foi publicada a partir de `codex/website-firebase`; a preparação de colaboração promove o website para `main`, que passa a ser a origem das próximas publicações. A integração de deploy automático por Git não está conectada. Fazer push no GitHub executa a CI, mas não publica sozinho na Vercel. Veja as [evidências e limitações iniciais](entregas/F2-google-spark-vercel.md) e a [preparação da main](entregas/F3-colaboracao-privada.md).
 
 ## Contas e administrador
 

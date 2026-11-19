@@ -1,6 +1,6 @@
 # fute.io — website com Firebase
 
-Branch `codex/website-firebase`: website da pelada piloto, com servidor no próprio Next.js. Publicação na Vercel Hobby, Firebase Spark para Auth/Firestore e Vercel Blob privado para fotos. A disponibilidade da publicação e os testes executados ficam registrados nas entregas; configuração preparada não significa publicação concluída.
+Website da pelada piloto, mantido na `main`, com servidor no próprio Next.js. Publicação na Vercel Hobby, Firebase Spark para Auth/Firestore e Vercel Blob privado para fotos. A disponibilidade da publicação e os testes executados ficam registrados nas entregas; configuração preparada não significa publicação concluída.
 
 Piloto publicado: **[fute-io.vercel.app](https://fute-io.vercel.app)**. Login do administrador: [entrar](https://fute-io.vercel.app/entrar). A publicação e suas verificações estão na [entrega F2](docs/entregas/F2-google-spark-vercel.md).
 
@@ -43,3 +43,7 @@ Siga [a configuração Vercel + Firebase Spark](docs/firebase.md). Ela cobre cre
 Veja [a decisão de hospedagem](docs/adr/0010-vercel-spark-blob-privado.md), [a migração Firebase](docs/adr/0008-website-firebase.md), [compatibilidade](docs/compatibilidade.md) e [evidências da entrega inicial](docs/entregas/F1-website-firebase.md).
 
 Login Google, preparação Spark/Vercel e verificações: [entrega F2](docs/entregas/F2-google-spark-vercel.md).
+
+## Colaboração privada
+
+Leia [CONTRIBUTING.md](CONTRIBUTING.md) e [SECURITY.md](SECURITY.md). O repositório permanece privado; a preparação da `main`, o levantamento do histórico e as proteções efetivamente disponíveis estão registrados na [entrega F3](docs/entregas/F3-colaboracao-privada.md). A configuração de proteção de branch está preparada, mas o GitHub exige um plano compatível para aplicá-la enquanto o repositório for privado.

@@ -456,6 +456,96 @@
             "description": "Fresh Firebase ID token from Google sign-in. Never persist or log."
           }
         }
+      },
+      "NativeSessionResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "token": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "minLength": 43,
+            "maxLength": 43,
+            "description": "Opaque native session credential. Store only in the device secure store; never logs, navigation or query cache."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "session": {
+            "$ref": "#/components/schemas/SessionResponseDto"
+          }
+        },
+        "required": [
+          "token",
+          "expiresAt",
+          "session"
+        ]
+      },
+      "NativeAuthorizeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "codeChallenge": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "minLength": 43,
+            "maxLength": 43,
+            "description": "S256 PKCE challenge derived from a verifier retained by the native app."
+          },
+          "state": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "minLength": 43,
+            "maxLength": 43
+          }
+        },
+        "required": [
+          "codeChallenge",
+          "state"
+        ]
+      },
+      "NativeAuthorizeResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "redirectUrl": {
+            "type": "string",
+            "description": "Fixed futeio://auth/callback URI containing a one-use code and matching state. Never accepts a caller-supplied redirect URI."
+          }
+        },
+        "required": [
+          "redirectUrl"
+        ]
+      },
+      "NativeExchangeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "minLength": 43,
+            "maxLength": 43
+          },
+          "codeVerifier": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._~-]{43,128}$",
+            "minLength": 43,
+            "maxLength": 128
+          },
+          "state": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "minLength": 43,
+            "maxLength": 43
+          }
+        },
+        "required": [
+          "code",
+          "codeVerifier",
+          "state"
+        ]
       }
     },
     "securitySchemes": {
@@ -463,12 +553,24 @@
         "in": "cookie",
         "name": "futeio_session",
         "type": "apiKey"
+      },
+      "nativeSession": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "opaque",
+        "description": "Opaque native session only. Browser cookie sessions cannot be used as Bearer tokens."
+      },
+      "nativeClient": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Futeio-Client",
+        "description": "Value must be native. This is a transport marker, not an authentication secret. Native requests must omit Cookie and Origin."
       }
     }
   },
   "info": {
     "contact": {},
-    "description": "Private single-group website backed by Firebase. Server-only business rules, opaque HttpOnly cookie sessions, exact Origin and CSRF for mutations. Administrator uses Firebase Auth; players use personal links. Native bearer authentication is not available in this branch.",
+    "description": "Private group REST API shared by website and native apps. Browser mutations require exact Origin and CSRF with HttpOnly cookies. Native requests require X-Futeio-Client: native, no Cookie/Origin, and an opaque Bearer session for protected resources. Session transports cannot be mixed or substituted. Firebase and Blob credentials stay server-side.",
     "title": "fute.io Website API",
     "version": "0.2.0"
   },
@@ -484,7 +586,8 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "Required for this browser-only endpoint."
           }
         ],
         "requestBody": {
@@ -523,6 +626,11 @@
         },
         "tags": [
           "Access"
+        ],
+        "security": [
+          {
+            "session": []
+          }
         ]
       }
     },
@@ -585,6 +693,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -614,6 +726,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -626,10 +742,10 @@
         "operationId": "PlayerAccessController_redeem",
         "parameters": [
           {
-            "description": "Required with browser cookies; native bearer authentication does not use ambient cookies.",
+            "description": "Required for this browser-only endpoint.",
             "in": "header",
             "name": "x-csrf-token",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -707,6 +823,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -763,6 +883,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -807,6 +931,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -870,6 +998,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -926,6 +1058,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -970,6 +1106,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -1026,6 +1166,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -1082,6 +1226,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -1135,6 +1283,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -1178,6 +1330,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -1245,6 +1401,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -1311,6 +1471,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -1355,6 +1519,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -1419,6 +1587,10 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "nativeSession": [],
+            "nativeClient": []
           }
         ],
         "tags": [
@@ -1436,7 +1608,8 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "Required for this browser-only endpoint."
           }
         ],
         "requestBody": {
@@ -1476,7 +1649,265 @@
         "tags": [
           "Access"
         ],
-        "summary": "Create an administrator cookie session from a verified Google sign-in"
+        "summary": "Create an administrator cookie session from a verified Google sign-in",
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/native/admin/login": {
+      "post": {
+        "operationId": "NativeAdministratorPasswordLogin",
+        "summary": "Sign in on a native device with the configured administrator Firebase account",
+        "tags": [
+          "Access"
+        ],
+        "security": [
+          {
+            "nativeClient": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Futeio-Client",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "native"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminPasswordLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "No Set-Cookie. Session token is returned only by native authentication endpoints.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeSessionResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields or mixed credentials"
+          },
+          "401": {
+            "description": "Not authorized, expired or already consumed"
+          },
+          "403": {
+            "description": "Cookie or Origin not allowed"
+          },
+          "429": {
+            "description": "Source quota exceeded"
+          },
+          "503": {
+            "description": "Dependency temporarily unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/native/player/redeem": {
+      "post": {
+        "operationId": "NativePlayerRedeem",
+        "summary": "Redeem an existing personal player link for a native session",
+        "tags": [
+          "Access"
+        ],
+        "security": [
+          {
+            "nativeClient": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Futeio-Client",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "native"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedeemPlayerLinkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "No Set-Cookie. Session token is returned only by native authentication endpoints.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeSessionResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields or mixed credentials"
+          },
+          "401": {
+            "description": "Not authorized, expired or already consumed"
+          },
+          "403": {
+            "description": "Cookie or Origin not allowed"
+          },
+          "429": {
+            "description": "Source quota exceeded"
+          },
+          "503": {
+            "description": "Dependency temporarily unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/native/admin/exchange": {
+      "post": {
+        "operationId": "NativeAdministratorExchange",
+        "summary": "Consume a two-minute one-use PKCE authorization code after browser sign-in",
+        "tags": [
+          "Access"
+        ],
+        "security": [
+          {
+            "nativeClient": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Futeio-Client",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "native"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NativeExchangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "No Set-Cookie. Session token is returned only by native authentication endpoints.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeSessionResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields or mixed credentials"
+          },
+          "401": {
+            "description": "Not authorized, expired or already consumed"
+          },
+          "403": {
+            "description": "Cookie or Origin not allowed"
+          },
+          "429": {
+            "description": "Source quota exceeded"
+          },
+          "503": {
+            "description": "Dependency temporarily unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/native/admin/authorize": {
+      "post": {
+        "operationId": "NativeAdministratorAuthorize",
+        "summary": "Explicitly authorize a native device from an authenticated administrator browser session",
+        "tags": [
+          "Access"
+        ],
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-csrf-token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NativeAuthorizeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Browser-only consent: returns a fixed callback URL with a one-use code, never a native session token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeAuthorizeResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid fields or mixed credentials"
+          },
+          "401": {
+            "description": "Not authorized, expired or already consumed"
+          },
+          "403": {
+            "description": "Requires administrator browser session, exact Origin and CSRF"
+          },
+          "429": {
+            "description": "Source quota exceeded"
+          },
+          "503": {
+            "description": "Dependency temporarily unavailable"
+          }
+        }
       }
     }
   },

@@ -1,10 +1,10 @@
-# fute.io — website com Firebase
+# fute.io — web e mobile com a mesma API
 
 Website da pelada piloto, mantido na `main`, com servidor no próprio Next.js. Publicação na Vercel Hobby, Firebase Spark para Auth/Firestore e Vercel Blob privado para fotos. A disponibilidade da publicação e os testes executados ficam registrados nas entregas; configuração preparada não significa publicação concluída.
 
 Piloto publicado: **[fute-io.vercel.app](https://fute-io.vercel.app)**. Login do administrador: [entrar](https://fute-io.vercel.app/entrar). A publicação e suas verificações estão na [entrega F2](docs/entregas/F2-google-spark-vercel.md).
 
-NestJS, PostgreSQL/Prisma e Expo permanecem nas branches anteriores. Dados e sessões antigos **não são migrados**. As decisões anteriores estão em `docs/history/`; não use os comandos históricos nesta branch.
+Esta branch restaura o aplicativo Expo e o conecta à API do website, com os mesmos dados Firebase e fotos privadas. NestJS e PostgreSQL/Prisma permanecem nos tags de arquivo. Dados e sessões desses serviços antigos **não são migrados**. As decisões anteriores estão em `docs/history/`; não use os comandos históricos nesta branch.
 
 ## Rodar sem conta Firebase
 
@@ -20,7 +20,7 @@ Os emuladores descartam dados ao parar. Para persistir dados sintéticos, use as
 
 ## Verificar
 
-Execute `pnpm lint`, `pnpm typecheck`, `pnpm test:unit`, `pnpm build`, `pnpm contracts:check`, `pnpm test:integration` e `pnpm test:e2e`. O atalho `pnpm verify` executa essa sequência. Instale antes o Chrome com `pnpm --filter @futeio/web exec playwright install --with-deps --no-remove chrome`.
+Execute `pnpm verify` para lint, tipos, testes web/mobile, compatibilidade Expo, exports Android/iOS, build web, contratos, integração e E2E. Instale antes o Chrome com `pnpm --filter @futeio/web exec playwright install --with-deps --no-remove chrome`.
 
 Integração e E2E iniciam emuladores próprios `demo-futeio-test` e recusam portas ocupadas. Não carregam credenciais reais nem reutilizam a aplicação local. E2E usa build separado `web/.next-validation`, servidor 3100 e Chrome instalado com sandbox ativa, conferindo o executável e os argumentos.
 
@@ -28,13 +28,16 @@ Integração e E2E iniciam emuladores próprios `demo-futeio-test` e recusam por
 
 - `web/src/app`: interface e rotas REST Node em `api/v1`.
 - `web/src/server`: autorização, validação e operações Firebase; regras puras em `domain`.
-- `web/contracts/openapi.json`: contrato REST; `pnpm contracts:generate` gera os tipos locais.
+- `mobile/`: React Native, Expo Router, TanStack Query e SecureStore. Veja [como executar](mobile/README.md).
+- `web/contracts/openapi.json`: contrato REST; `pnpm contracts:generate` gera os tipos compartilhados em `packages/contracts`.
 - `firebase/`: Rules privadas, índices e emuladores locais.
 - `scripts/`: testes isolados, seed sintético e contratos.
 
-O navegador não acessa diretamente Firestore nem Blob. As regras de avaliação, privacidade e sorteio continuam no servidor. O Storage do Firebase é usado apenas pelo ambiente local de testes. pnpm conserva somente o workspace web; Turborepo executa o build.
+Os clientes não acessam diretamente Firestore nem Blob. As regras de avaliação, privacidade e sorteio continuam no servidor Next.js. O Storage do Firebase é usado apenas pelo ambiente local de testes. pnpm conserva os workspaces web, mobile e contratos; Turborepo executa os builds.
 
 O administrador pode entrar com Google ou e-mail/senha, sempre limitado ao UID/e-mail configurados. O Firebase Web SDK é usado apenas para autenticar com Google em memória e trocar o token pela sessão HttpOnly; os jogadores continuam pelos links. Veja [a decisão do login Google](docs/adr/0009-login-google-do-administrador.md).
+
+No aplicativo, a sessão usa SecureStore e Bearer, sem cookies. Google abre a autenticação web e exige confirmação explícita antes de retornar um código único protegido por PKCE. Veja [a decisão de acesso nativo](docs/adr/0012-mobile-na-api-firebase.md). Essa integração requer instalar uma versão nativa para testar o retorno do Google; exportar JavaScript não valida execução em aparelhos.
 
 ## Publicar
 

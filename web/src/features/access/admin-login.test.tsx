@@ -34,6 +34,28 @@ async function fillCredentials() {
 }
 
 describe("AdminLogin", () => {
+  it("returns to the native consent flow after password login instead of changing the website route", async () => {
+    const authenticated = jest.fn();
+    loginMock.mockResolvedValue({ role: "ADMIN", identityId: "test-identity", groupId: "test-group" });
+    render(<AdminLogin onAuthenticated={authenticated} />);
+    await fillCredentials();
+    await waitFor(() => expect(authenticated).toHaveBeenCalledTimes(1));
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("does not authorize a browser flow unmounted while its password request is pending", async () => {
+    const authenticated = jest.fn();
+    let resolve!: (value: Awaited<ReturnType<typeof loginAdministrator>>) => void;
+    loginMock.mockImplementation(() => new Promise(done => { resolve = done; }));
+    const { unmount } = render(<AdminLogin onAuthenticated={authenticated} />);
+    await fillCredentials();
+    unmount();
+    resolve({ role: "ADMIN", identityId: "test-identity", groupId: "test-group" });
+    await Promise.resolve();
+    expect(authenticated).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it("uses Google without requiring password fields and clears the temporary Firebase user", async () => {
     googleMock.mockResolvedValue({ role: "ADMIN", identityId: "test-identity", groupId: "test-group" });
     const { unmount } = render(<AdminLogin googleConfig={googleConfig} />);

@@ -59,6 +59,10 @@ jobs:
         run: pnpm typecheck
       - name: Unit tests
         run: pnpm test:unit
+      - name: Mobile unit tests
+        run: pnpm test:mobile
+      - name: Check Expo SDK dependency compatibility
+        run: pnpm mobile:check
       - name: Firebase Auth, Firestore and Storage emulator integration tests
         run: pnpm test:integration
       - name: Production builds

@@ -9,18 +9,23 @@
   },
   "scripts": {
     "dev": "pnpm --filter @futeio/web dev",
+    "dev:mobile": "pnpm --filter @futeio/mobile dev",
+    "mobile:android": "pnpm --filter @futeio/mobile android",
+    "mobile:ios": "pnpm --filter @futeio/mobile ios",
     "build": "turbo run build",
     "start": "pnpm --filter @futeio/web start",
-    "lint": "eslint scripts && pnpm --filter @futeio/web lint",
-    "typecheck": "pnpm --filter @futeio/web typecheck",
+    "lint": "eslint scripts && pnpm --filter @futeio/web lint && pnpm --filter @futeio/mobile lint",
+    "typecheck": "pnpm --filter @futeio/web typecheck && pnpm --filter @futeio/mobile typecheck",
     "test:unit": "node --test scripts/ports.test.mjs scripts/process-group.test.mjs scripts/web-config.test.mjs scripts/firebase-module.test.mjs && node --conditions=react-server --test web/src/server/domain/*.test.ts && pnpm --filter @futeio/web test:unit",
     "test:integration": "node scripts/firebase-test.mjs integration",
+    "test:mobile": "pnpm --filter @futeio/mobile test:unit",
+    "mobile:check": "pnpm --filter @futeio/mobile check:expo",
     "test:e2e": "node scripts/firebase-test.mjs e2e",
     "contracts:generate": "node scripts/contracts.mjs --write",
     "contracts:check": "node scripts/contracts.mjs --check",
     "firebase:emulators": "firebase emulators:start --project demo-futeio --only auth,firestore,storage",
     "firebase:seed": "node --env-file-if-exists=.env.firebase scripts/seed-emulator.mjs",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm build && pnpm contracts:check && pnpm test:integration && pnpm test:e2e"
+    "verify": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:mobile && pnpm mobile:check && pnpm build && pnpm contracts:check && pnpm test:integration && pnpm test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -31,5 +36,5 @@
     "firebase-tools": "15.36.0",
     "turbo": "2.11.10"
   },
-  "description": "Website privado da pelada, preparado para Firebase."
+  "description": "Web e mobile privados da pelada, com uma API e dados Firebase compartilhados."
 }

@@ -17,7 +17,7 @@ export async function removeExpiredRecords() {
   let deleted = 0;
   // Bounded daily work fits the pilot and avoids unbounded serverless execution.
   // Expiry is enforced by auth/rate-limit checks even if this job is delayed.
-  for (const name of ["sessions", "rateLimits"]) {
+  for (const name of ["sessions", "rateLimits", "nativeLoginGrants"]) {
     for (let page = 0; page < 2; page++) {
       const expired = await db.collection(name).where("expiresAt", "<=", cutoff).orderBy("expiresAt").limit(250).get();
       if (expired.empty) break;

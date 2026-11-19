@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AccessFrame } from "@/features/access/access-frame";
 import { AdminLogin } from "@/features/access/admin-login";
-import { config } from "@/server/firebase";
+import { publicGoogleConfig } from "@/server/public-auth-config";
 
 export const dynamic = "force-dynamic";
 
@@ -11,15 +11,8 @@ export const metadata: Metadata = {
 };
 
 export default function LoginPage() {
-  const settings = config();
   // Firebase web identifiers are public. Never pass admin identity or server secrets.
-  const googleConfig = {
-    apiKey: settings.apiKey,
-    projectId: settings.projectId,
-    authDomain: `${settings.projectId}.firebaseapp.com`,
-    ...(process.env.FIREBASE_WEB_APP_ID ? { appId: process.env.FIREBASE_WEB_APP_ID } : {}),
-    ...(settings.mode === "emulator" ? { emulatorHost: process.env.FIREBASE_AUTH_EMULATOR_HOST } : {}),
-  };
+  const googleConfig = publicGoogleConfig();
   return (
     <AccessFrame
       title="Entrar no Futeio"

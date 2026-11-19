@@ -1,6 +1,6 @@
 # Contribuir com o fute.io
 
-O repositório permanece privado durante o piloto. A branch principal é `main`; as branches anteriores preservam as experiências com API/mobile e não devem ser usadas para publicar este website.
+O repositório permanece privado durante o piloto. A branch principal é `main`; tags `archive/2026-11-19/*` preservam as experiências anteriores. A adaptação mobile é desenvolvida em `codex/mobile-firebase-api`, sem merge automático na principal.
 
 1. Crie uma branch a partir de `main` e abra um pull request pequeno, descrevendo problema, mudança e validação.
 2. Execute o ambiente com os emuladores e contas sintéticas do README. Não compartilhe o `.env.firebase`, credenciais de produção, fotos, dados ou links de jogadores.

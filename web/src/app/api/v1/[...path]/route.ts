@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { config, firebase } from "@/server/firebase";
 import { HttpError } from "@/server/context";
-import { csrfResponse, currentSession, loginAdministrator, loginAdministratorWithGoogle, logout, redeemPlayer, requireCsrf, rateLimit } from "@/server/access";
+import { csrfResponse, currentSession, loginAdministrator, loginAdministratorWithGoogle, logout, redeemPlayer, requireCsrf, rateLimit, isNativeTransport, requireNativeRequest, loginAdministratorNative, redeemPlayerNative, authorizeNativeAdministrator, exchangeNativeAdministrator } from "@/server/access";
 import * as players from "@/server/players";
 import * as draws from "@/server/draws";
 
@@ -52,7 +52,23 @@ async function handle(request: Request, context: { params: Promise<{ path: strin
       const result = await csrfResponse(request);
       return json(result.body, 200, result.cookie);
     }
-    if (method !== "GET") await requireCsrf(request);
+    if (method === "POST" && ["auth/native/admin/login", "auth/native/player/redeem", "auth/native/admin/exchange"].includes(route)) {
+      requireNativeRequest(request);
+      const body = await readBody(request);
+      const result = route === "auth/native/admin/login" ? await loginAdministratorNative(request, body)
+        : route === "auth/native/player/redeem" ? await redeemPlayerNative(request, body)
+          : await exchangeNativeAdministrator(request, body);
+      return json(result.body);
+    }
+    if (method === "POST" && route === "auth/native/admin/authorize") {
+      const result = await authorizeNativeAdministrator(request, await readBody(request));
+      return json(result.body);
+    }
+    let nativeSession;
+    if (method !== "GET") {
+      if (isNativeTransport(request)) nativeSession = await currentSession(request);
+      else await requireCsrf(request);
+    }
     if (method === "POST" && ["auth/admin/login", "auth/admin/google", "auth/player/redeem", "auth/logout"].includes(route)) {
       const result = route === "auth/logout" ? await logout(request)
         : route === "auth/admin/login" ? await loginAdministrator(request, await readBody(request))
@@ -60,7 +76,7 @@ async function handle(request: Request, context: { params: Promise<{ path: strin
           : await redeemPlayer(request, await readBody(request));
       return json(result.body, 200, result.cookie);
     }
-    const session = await currentSession(request);
+    const session = nativeSession ?? await currentSession(request);
     if (method === "GET" && route === "auth/me") return json(session);
     if (route === "players") {
       if (method === "GET") return json(await players.listPlayers(session));

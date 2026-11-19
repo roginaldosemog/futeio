@@ -6,7 +6,7 @@ import { AccessError, googleLoginErrorMessage, loginAdministrator, loginAdminist
 import { AdminLoginForm } from "./admin-login-form";
 import { prepareGoogleLogin, type GoogleAuthConfig, type GoogleLoginClient } from "./google-auth";
 
-export function AdminLogin({ googleConfig }: { googleConfig?: GoogleAuthConfig }) {
+export function AdminLogin({ googleConfig, onAuthenticated }: { googleConfig?: GoogleAuthConfig; onAuthenticated?: () => void }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
@@ -14,6 +14,8 @@ export function AdminLogin({ googleConfig }: { googleConfig?: GoogleAuthConfig }
   const googleClient = useRef<GoogleLoginClient | undefined>(undefined);
   const googleGeneration = useRef({ cancelled: false });
   const [googleAttempt, setGoogleAttempt] = useState(0);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   useEffect(() => {
     if (!googleConfig) return;
@@ -54,7 +56,8 @@ export function AdminLogin({ googleConfig }: { googleConfig?: GoogleAuthConfig }
       const session = await loginAdministratorWithGoogle(token);
       if (!isCurrent()) return;
       if (session.role !== "ADMIN") throw new AccessError(403);
-      router.replace("/administracao");
+      if (onAuthenticated) onAuthenticated();
+      else router.replace("/administracao");
     } catch (error) {
       if (isCurrent()) setErrorMessage(googleLoginErrorMessage(error));
     } finally {
@@ -68,14 +71,16 @@ export function AdminLogin({ googleConfig }: { googleConfig?: GoogleAuthConfig }
     setErrorMessage(undefined);
     try {
       const session = await loginAdministrator(email, password);
+      if (!mounted.current) return false;
       if (session.role !== "ADMIN") throw new AccessError(403);
-      router.replace("/administracao");
+      if (onAuthenticated) onAuthenticated();
+      else router.replace("/administracao");
       return true;
     } catch (error) {
-      setErrorMessage(loginErrorMessage(error));
+      if (mounted.current) setErrorMessage(loginErrorMessage(error));
       return false;
     } finally {
-      setPending(false);
+      if (mounted.current) setPending(false);
     }
   }
 

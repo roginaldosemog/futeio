@@ -1,13 +1,14 @@
 import { after, before, beforeEach, mock, test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
 import { deleteApp, getApps } from "firebase-admin/app";
 import { Timestamp } from "firebase-admin/firestore";
 import { config, firebase, emulatorBucket } from "../src/server/firebase.ts";
 import { authorizedMaintenance, removeExpiredRecords } from "../src/server/maintenance.ts";
 import { requestSource } from "../src/server/request-source.ts";
 import { ADMIN_ID, GROUP_ID, HttpError, type Session } from "../src/server/context.ts";
-import { csrfResponse, currentSession, loginAdministrator, loginAdministratorWithGoogle, logout, redeemPlayer, requireCsrf, rateLimit, secretHash } from "../src/server/access.ts";
+import { csrfResponse, currentSession, loginAdministrator, loginAdministratorWithGoogle, logout, redeemPlayer, requireCsrf, rateLimit, secretHash, loginAdministratorNative, redeemPlayerNative, authorizeNativeAdministrator, exchangeNativeAdministrator } from "../src/server/access.ts";
 import * as players from "../src/server/players.ts";
 import * as draws from "../src/server/draws.ts";
 import { savePhoto, readPhoto, deletePhoto } from "../src/server/photos.ts";
@@ -29,6 +30,27 @@ async function member(name = "Jogador sintético", rating = 7) {
   const token = new URLSearchParams(new URL(created.accessUrl).hash.slice(1)).get("token")!;
   const result = await redeemPlayer(request(), { token });
   return { ...created, token, cookie: result.cookie, session: result.body };
+}
+const nativeRequest = (token?: string, extra: Record<string, string> = {}) => new Request(`${origin}/api/v1/auth/me`, { headers: { "X-Futeio-Client": "native", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...extra } });
+async function administratorBrowser() {
+  const initial = await anonymous();
+  const login = await loginAdministrator(request(initial.cookie), { email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD });
+  const proof = await csrfResponse(request(login.cookie));
+  return { cookie: login.cookie, csrf: proof.body.csrfToken };
+}
+async function nativeGrant() {
+  const browser = await administratorBrowser();
+  const codeVerifier = "v".repeat(43);
+  const state = "s".repeat(43);
+  const codeChallenge = createHash("sha256").update(codeVerifier).digest("base64url");
+  const granted = await authorizeNativeAdministrator(request(browser.cookie, browser.csrf), { codeChallenge, state });
+  const callback = new URL(granted.body.redirectUrl);
+  assert.equal(callback.origin, "null");
+  assert.equal(callback.protocol, "futeio:");
+  assert.equal(callback.hostname, "auth");
+  assert.equal(callback.pathname, "/callback");
+  assert.equal(callback.searchParams.get("state"), state);
+  return { browser, codeVerifier, state, codeChallenge, code: callback.searchParams.get("code")! };
 }
 
 // The official Auth emulator accepts synthetic IdP assertions, never real Google tokens.
@@ -167,12 +189,12 @@ test("daily cleanup requires its own secret and removes only expired records", a
     assert.equal(authorizedMaintenance(new Request(origin, { headers: { authorization: "Bearer wrong" } })), false);
     assert.equal(authorizedMaintenance(new Request(origin, { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } })), true);
     const { db } = firebase();
-    for (const name of ["sessions", "rateLimits"]) {
+    for (const name of ["sessions", "rateLimits", "nativeLoginGrants"]) {
       await db.collection(name).doc("cleanup-expired").set({ expiresAt: Timestamp.fromMillis(Date.now() - 60_000) });
       await db.collection(name).doc("cleanup-active").set({ expiresAt: Timestamp.fromMillis(Date.now() + 60_000) });
     }
-    assert.ok((await removeExpiredRecords()).deleted >= 2);
-    for (const name of ["sessions", "rateLimits"]) {
+    assert.ok((await removeExpiredRecords()).deleted >= 3);
+    for (const name of ["sessions", "rateLimits", "nativeLoginGrants"]) {
       assert.equal((await db.collection(name).doc("cleanup-expired").get()).exists, false);
       assert.equal((await db.collection(name).doc("cleanup-active").get()).exists, true);
       await db.collection(name).doc("cleanup-active").delete();
@@ -486,4 +508,148 @@ test("client Firestore REST access is denied even with a valid Firebase Auth tok
   const token = (await login.json()).idToken as string;
   assert.equal((await fetch(rest, { headers: { Authorization: `Bearer ${token}` } })).status, 403);
   assert.equal((await fetch(`${rest}/unexpected`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fields: { name: { stringValue: "Denied" } } }) })).status, 403);
+});
+
+test("native administrator credentials create a hashed device session and logout leaves browser access intact", async () => {
+  const browser = await administratorBrowser();
+  const result = await loginAdministratorNative(nativeRequest(), { email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD });
+  assert.equal(result.cookie, undefined);
+  assert.match(result.body.token, /^[A-Za-z0-9_-]{43}$/);
+  assert.ok(Date.parse(result.body.expiresAt) > Date.now() + 7 * 60 * 60 * 1000);
+  assert.equal(result.body.session.role, "ADMIN");
+  const record = await firebase().db.collection("sessions").doc(secretHash(result.body.token)).get();
+  assert.equal(record.get("transport"), "NATIVE");
+  assert.equal(JSON.stringify(record.data()).includes(result.body.token), false);
+  assert.equal((await currentSession(nativeRequest(result.body.token))).role, "ADMIN");
+  const signedOut = await logout(nativeRequest(result.body.token));
+  assert.equal(signedOut.cookie, undefined);
+  await assert.rejects(currentSession(nativeRequest(result.body.token)), isStatus(401));
+  assert.equal((await currentSession(request(browser.cookie))).role, "ADMIN");
+  await assert.rejects(loginAdministratorNative(nativeRequest(), { email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD, role: "ADMIN" }), isStatus(400));
+});
+
+test("cookie and native session transports cannot be substituted, combined or used for browser CSRF", async () => {
+  const browser = await administratorBrowser();
+  const native = await loginAdministratorNative(nativeRequest(), { email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD });
+  const browserToken = browser.cookie.split(";")[0]!.split("=")[1]!;
+  await assert.rejects(currentSession(nativeRequest(browserToken)), isStatus(401));
+  await assert.rejects(currentSession(request(`futeio_session=${native.body.token}`)), isStatus(401));
+  await assert.rejects(currentSession(nativeRequest(native.body.token, { Cookie: browser.cookie.split(";")[0]! })), isStatus(400));
+  await assert.rejects(currentSession(nativeRequest(native.body.token, { Origin: origin })), isStatus(403));
+  await assert.rejects(currentSession(new Request(origin, { headers: { Authorization: `Bearer ${native.body.token}` } })), isStatus(401));
+  await assert.rejects(currentSession(new Request(origin, { headers: { "X-Futeio-Client": "native", Authorization: `Basic ${native.body.token}` } })), isStatus(401));
+  await assert.rejects(csrfResponse(nativeRequest(native.body.token)), isStatus(400));
+  await assert.rejects(requireCsrf(nativeRequest(native.body.token)), isStatus(400));
+  await assert.rejects(loginAdministratorNative(nativeRequest(undefined, { Origin: origin }), { email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD }), isStatus(403));
+  await assert.rejects(loginAdministratorNative(request(browser.cookie), { email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD }), isStatus(403));
+  // Existing browser records without the new discriminator retain their transport.
+  await firebase().db.collection("sessions").doc(secretHash(browserToken)).update({ transport: (await import("firebase-admin/firestore")).FieldValue.delete() });
+  assert.equal((await currentSession(request(browser.cookie))).role, "ADMIN");
+});
+
+test("native player links share group projections and lose access on rotation, revocation or expiry", async () => {
+  const created = await players.createPlayer(admin, { name: "Nativo", initialRating: 5 });
+  const token = new URLSearchParams(new URL(created.accessUrl).hash.slice(1)).get("token")!;
+  const first = await redeemPlayerNative(nativeRequest(), { token });
+  assert.equal(first.cookie, undefined);
+  const session = await currentSession(nativeRequest(first.body.token));
+  assert.equal(session.role, "PLAYER");
+  assert.equal(session.playerId, created.player.id);
+  assert.equal((await players.listPlayers(session)).some(row => row.id === created.player.id && row.rating === 5), true);
+  assert.ok((await players.getEvaluations(session, created.player.id)).evaluations.every(row => row.isOwn || !Object.hasOwn(row, "authorName")));
+  await assert.rejects(players.createPlayer(session, { name: "Proibido", initialRating: 5 }), isStatus(403));
+  const rotated = await players.rotateLink(admin, created.player.id);
+  await assert.rejects(currentSession(nativeRequest(first.body.token)), isStatus(401));
+  await assert.rejects(redeemPlayerNative(nativeRequest(), { token }), isStatus(401));
+  const currentToken = new URLSearchParams(new URL(rotated.accessUrl).hash.slice(1)).get("token")!;
+  const second = await redeemPlayerNative(nativeRequest(), { token: currentToken });
+  await firebase().db.collection("sessions").doc(secretHash(second.body.token)).update({ expiresAt: Timestamp.fromMillis(Date.now() - 1) });
+  await assert.rejects(currentSession(nativeRequest(second.body.token)), isStatus(401));
+  const third = await redeemPlayerNative(nativeRequest(), { token: currentToken });
+  await players.revokeLink(admin, created.player.id);
+  await assert.rejects(currentSession(nativeRequest(third.body.token)), isStatus(401));
+});
+
+test("native administrator sessions enforce configured UID, disabled user and revocation", async () => {
+  const result = await loginAdministratorNative(nativeRequest(), { email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD });
+  const uid = config().adminUid;
+  await firebase().auth.updateUser(uid, { disabled: true });
+  try { await assert.rejects(currentSession(nativeRequest(result.body.token)), isStatus(401)); }
+  finally { await firebase().auth.updateUser(uid, { disabled: false }); }
+  const user = await firebase().auth.getUser(uid);
+  const fault = mock.method(firebase().auth, "getUser", async () => ({ ...user, tokensValidAfterTime: new Date(Date.now() + 10_000).toUTCString() }));
+  try { await assert.rejects(currentSession(nativeRequest(result.body.token)), isStatus(401)); }
+  finally { fault.mock.restore(); }
+  process.env.FIREBASE_ADMIN_UID = "different-native-admin";
+  try { await assert.rejects(currentSession(nativeRequest(result.body.token)), isStatus(401)); }
+  finally { process.env.FIREBASE_ADMIN_UID = uid; }
+});
+
+test("native grants require administrator browser consent and cannot choose a redirect URI", async () => {
+  const body = { codeChallenge: "c".repeat(43), state: "s".repeat(43) };
+  await assert.rejects(authorizeNativeAdministrator(request(), body), isStatus(403));
+  const browser = await administratorBrowser();
+  await assert.rejects(authorizeNativeAdministrator(request(browser.cookie), body), isStatus(403));
+  await assert.rejects(authorizeNativeAdministrator(request(browser.cookie, browser.csrf, "https://wrong.example"), body), isStatus(403));
+  await assert.rejects(authorizeNativeAdministrator(request(browser.cookie, browser.csrf), { ...body, redirectUri: "https://wrong.example" }), isStatus(400));
+  const player = await member("Sem privilégio nativo");
+  const proof = await csrfResponse(request(player.cookie));
+  await assert.rejects(authorizeNativeAdministrator(request(player.cookie, proof.body.csrfToken), body), isStatus(403));
+  const native = await loginAdministratorNative(nativeRequest(), { email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD });
+  await assert.rejects(authorizeNativeAdministrator(nativeRequest(native.body.token), body), isStatus(400));
+});
+
+test("PKCE and state bind a short one-use grant without exposing a session to the browser", async () => {
+  const grant = await nativeGrant();
+  const reference = firebase().db.collection("nativeLoginGrants").doc(secretHash(grant.code));
+  const record = await reference.get();
+  assert.equal(record.get("codeChallenge"), grant.codeChallenge);
+  assert.equal(JSON.stringify(record.data()).includes(grant.code), false);
+  assert.ok(record.get("expiresAt").toMillis() <= Date.now() + 120_000);
+  const input = { code: grant.code, codeVerifier: grant.codeVerifier, state: grant.state };
+  await assert.rejects(exchangeNativeAdministrator(nativeRequest(), { ...input, codeVerifier: "w".repeat(43) }), isStatus(401));
+  await assert.rejects(exchangeNativeAdministrator(nativeRequest(), { ...input, state: "t".repeat(43) }), isStatus(401));
+  assert.equal((await reference.get()).exists, true);
+  const exchanged = await exchangeNativeAdministrator(nativeRequest(), input);
+  assert.equal(exchanged.cookie, undefined);
+  assert.equal(exchanged.body.session.role, "ADMIN");
+  assert.equal((await reference.get()).exists, false);
+  assert.equal((await currentSession(nativeRequest(exchanged.body.token))).role, "ADMIN");
+  await assert.rejects(exchangeNativeAdministrator(nativeRequest(), input), isStatus(401));
+  assert.equal((await currentSession(request(grant.browser.cookie))).role, "ADMIN");
+});
+
+test("native grant exchange is atomic when two devices race the same authorization", async () => {
+  const grant = await nativeGrant();
+  const input = { code: grant.code, codeVerifier: grant.codeVerifier, state: grant.state };
+  const before = await firebase().db.collection("sessions").where("transport", "==", "NATIVE").count().get();
+  const outcomes = await Promise.allSettled([0, 1].map(() => exchangeNativeAdministrator(nativeRequest(), input)));
+  assert.equal(outcomes.filter(outcome => outcome.status === "fulfilled").length, 1);
+  const failure = outcomes.find(outcome => outcome.status === "rejected");
+  assert.ok(failure && isStatus(401)(failure.reason));
+  const after = await firebase().db.collection("sessions").where("transport", "==", "NATIVE").count().get();
+  assert.equal(after.data().count - before.data().count, 1);
+});
+
+test("expired grants and revoked administrator authorization cannot mint native sessions", async () => {
+  const grant = await nativeGrant();
+  const reference = firebase().db.collection("nativeLoginGrants").doc(secretHash(grant.code));
+  const input = { code: grant.code, codeVerifier: grant.codeVerifier, state: grant.state };
+  await reference.update({ expiresAt: Timestamp.fromMillis(Date.now() - 1) });
+  await assert.rejects(exchangeNativeAdministrator(nativeRequest(), input), isStatus(401));
+  const other = await nativeGrant();
+  const otherInput = { code: other.code, codeVerifier: other.codeVerifier, state: other.state };
+  const user = await firebase().auth.getUser(config().adminUid);
+  const revoked = mock.method(firebase().auth, "getUser", async () => ({ ...user, tokensValidAfterTime: new Date(Date.now() + 10_000).toUTCString() }));
+  try { await assert.rejects(exchangeNativeAdministrator(nativeRequest(), otherInput), isStatus(401)); }
+  finally { revoked.mock.restore(); }
+  assert.equal((await firebase().db.collection("nativeLoginGrants").doc(secretHash(other.code)).get()).exists, true);
+});
+
+test("native and browser sign-in share the same origin budget", async () => {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    await assert.rejects(loginAdministratorNative(nativeRequest(), { email: `native-${attempt}@example.test`, password: "synthetic-wrong" }), isStatus(401));
+    await assert.rejects(loginAdministratorWithGoogle(request(), { idToken: "synthetic-invalid-token" }), isStatus(401));
+  }
+  await assert.rejects(loginAdministratorNative(nativeRequest(), { email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD }), isStatus(429));
 });

@@ -9,6 +9,14 @@
       "env": [
         "NEXT_TELEMETRY_DISABLED"
       ]
+    },
+    "@futeio/mobile#build": {
+      "outputs": ["dist/**"],
+      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*"],
+      "env": [
+        "EXPO_PUBLIC_API_URL",
+        "EXPO_PUBLIC_WEB_URL"
+      ]
     }
   }
 }

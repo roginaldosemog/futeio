@@ -6,6 +6,12 @@ test.beforeAll(() => {
 });
 
 test("Google creates an administrator cookie through the real Auth emulator popup", async ({ page, context }) => {
+  // Diagnose the failing boundary without printing credentials or response bodies.
+  const boundaries: { path: string; status: number }[] = [];
+  page.on("response", response => {
+    const path = new URL(response.url()).pathname;
+    if (path.startsWith("/api/v1/auth/")) boundaries.push({ path, status: response.status() });
+  });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/entrar");
   const button = page.getByRole("button", { name: "Entrar com Google", exact: true });
@@ -16,7 +22,12 @@ test("Google creates an administrator cookie through the real Auth emulator popu
   const popup = await opened;
   await expect(popup).toHaveURL(/^http:\/\/127\.0\.0\.1:9299\//);
   await popup.getByText(TEST_ADMIN_EMAIL, { exact: true }).click();
-  await expect(page).toHaveURL(/\/administracao$/, { timeout: 20_000 });
+  try {
+    await expect(page).toHaveURL(/\/administracao$/, { timeout: 20_000 });
+  } catch (error) {
+    console.log(`[google-login-diagnostic] ${JSON.stringify({ path: new URL(page.url()).pathname, boundaries, alerts: await page.getByRole("alert").allTextContents(), popupClosed: popup.isClosed(), buttonEnabled: await button.isEnabled(), cookieNames: (await context.cookies()).map(cookie => cookie.name) })}`);
+    throw error;
+  }
   const session = (await context.cookies()).find((cookie) => cookie.name === "futeio_session");
   expect(session?.httpOnly).toBe(true);
   expect((await (await page.request.get("/api/v1/auth/me")).json()).role).toBe("ADMIN");

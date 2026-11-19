@@ -5,6 +5,7 @@ import { deleteApp, getApps } from "firebase-admin/app";
 import { Timestamp } from "firebase-admin/firestore";
 import { config, firebase, emulatorBucket } from "../src/server/firebase.ts";
 import { authorizedMaintenance, removeExpiredRecords } from "../src/server/maintenance.ts";
+import { requestSource } from "../src/server/request-source.ts";
 import { ADMIN_ID, GROUP_ID, HttpError, type Session } from "../src/server/context.ts";
 import { csrfResponse, currentSession, loginAdministrator, loginAdministratorWithGoogle, logout, redeemPlayer, requireCsrf, rateLimit, secretHash } from "../src/server/access.ts";
 import * as players from "../src/server/players.ts";
@@ -19,6 +20,9 @@ const request = (cookie?: string, csrf?: string, requestOrigin = origin) => new 
 async function anonymous() {
   const response = await csrfResponse(request());
   return { cookie: response.cookie!, csrf: response.body.csrfToken };
+}
+function fromSource(ip: string, cookie?: string, extra: Record<string, string> = {}) {
+  return new Request(`${origin}/api/v1/auth/me`, { headers: { Origin: origin, "x-vercel-forwarded-for": ip, ...(cookie ? { Cookie: cookie.split(";")[0]! } : {}), ...extra } });
 }
 async function member(name = "Jogador sintético", rating = 7) {
   const created = await players.createPlayer(admin, { name, initialRating: rating });
@@ -46,6 +50,114 @@ beforeEach(async () => {
   await firebase().db.recursiveDelete(firebase().db.collection("rateLimits"));
 });
 after(async () => { await Promise.all(getApps().map(deleteApp)); });
+
+test("request sources require the platform boundary, canonicalize IPv6 and ignore spoofable headers", () => {
+  const previous = process.env.VERCEL;
+  try {
+    delete process.env.VERCEL;
+    assert.equal(requestSource(fromSource("198.51.100.10")), requestSource(fromSource("198.51.100.11")));
+    process.env.VERCEL = "1";
+    const source = requestSource(fromSource("198.51.100.10"));
+    assert.notEqual(source, requestSource(fromSource("198.51.100.11")));
+    assert.equal(source, requestSource(fromSource("198.51.100.10", "futeio_session=untrusted", { "x-forwarded-for": "203.0.113.2", "x-real-ip": "203.0.113.3", "user-agent": "different" })));
+    assert.equal(requestSource(fromSource("2001:db8::1")), requestSource(fromSource("2001:0db8:0000:0000:0000:0000:0000:0001")));
+    for (const value of ["", "unknown", "198.51.100.10, 198.51.100.11", "198.51.100.10:80"]) assert.throws(() => requestSource(fromSource(value)), isStatus(503));
+    assert.throws(() => requestSource(new Request(origin, { headers: { "x-forwarded-for": "198.51.100.10" } })), isStatus(503));
+    assert.match(source, /^[a-f0-9]{64}$/);
+  } finally {
+    if (previous === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = previous;
+  }
+});
+
+test("password failures cannot block another source or be bypassed by changing cookies", async () => {
+  const previous = process.env.VERCEL;
+  process.env.VERCEL = "1";
+  try {
+    const sourceA = "198.51.100.10";
+    const sourceB = "198.51.100.11";
+    for (let attempt = 0; attempt < 5; attempt++) await assert.rejects(loginAdministrator(fromSource(sourceA), { email: TEST_ADMIN_EMAIL, password: "synthetic-wrong" }), isStatus(401));
+    const initialA = await csrfResponse(fromSource(sourceA));
+    await assert.rejects(loginAdministrator(fromSource(sourceA, initialA.cookie, { "x-forwarded-for": sourceB }), { email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD }), isStatus(429));
+    const initialB = await csrfResponse(fromSource(sourceB));
+    const signedIn = await loginAdministrator(fromSource(sourceB, initialB.cookie), { email: TEST_ADMIN_EMAIL, password: TEST_ADMIN_PASSWORD });
+    assert.equal((await currentSession(request(signedIn.cookie))).role, "ADMIN");
+    const records = await firebase().db.collection("rateLimits").get();
+    const serialized = JSON.stringify(records.docs.map(doc => ({ id: doc.id, data: doc.data() })));
+    assert.equal(serialized.includes(sourceA), false);
+    assert.equal(serialized.includes(TEST_ADMIN_EMAIL), false);
+  } finally {
+    if (previous === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = previous;
+  }
+});
+
+test("production does not trust forwarding headers outside the configured platform", () => {
+  const keys = ["VERCEL", "FUTEIO_FIREBASE_MODE", "FIREBASE_PROJECT_ID", "APP_ORIGIN", "FIREBASE_AUTH_EMULATOR_HOST", "FIRESTORE_EMULATOR_HOST", "FIREBASE_STORAGE_EMULATOR_HOST", "STORAGE_EMULATOR_HOST"];
+  const previous = new Map(keys.map(key => [key, process.env[key]]));
+  try {
+    for (const key of keys) delete process.env[key];
+    process.env.FUTEIO_FIREBASE_MODE = "production";
+    process.env.FIREBASE_PROJECT_ID = "synthetic-production";
+    process.env.APP_ORIGIN = "https://synthetic.example";
+    assert.throws(() => requestSource(new Request("https://synthetic.example", { headers: { "x-vercel-forwarded-for": "198.51.100.10", "x-forwarded-for": "198.51.100.10", vercel: "1" } })), isStatus(503));
+  } finally {
+    for (const [key, value] of previous) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test("one source has one login quota across emails and Google while another can authenticate", async () => {
+  const previous = process.env.VERCEL;
+  process.env.VERCEL = "1";
+  try {
+    const sourceA = "198.51.100.20";
+    const sourceB = "198.51.100.21";
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await assert.rejects(loginAdministrator(fromSource(sourceA), { email: `unapproved-${attempt}@example.test`, password: "synthetic-wrong" }), isStatus(401));
+      await assert.rejects(loginAdministratorWithGoogle(fromSource(sourceA), { idToken: "synthetic-invalid-token" }), isStatus(401));
+    }
+    await assert.rejects(loginAdministratorWithGoogle(fromSource(sourceA), { idToken: "synthetic-invalid-token" }), isStatus(429));
+    const initialB = await csrfResponse(fromSource(sourceB));
+    const signedIn = await loginAdministratorWithGoogle(fromSource(sourceB, initialB.cookie), { idToken: await googleToken() });
+    assert.equal((await currentSession(request(signedIn.cookie))).role, "ADMIN");
+  } finally {
+    if (previous === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = previous;
+  }
+});
+
+test("exhausting anonymous CSRF and link quotas cannot block another source", async () => {
+  const previous = process.env.VERCEL;
+  process.env.VERCEL = "1";
+  try {
+    const sourceA = fromSource("198.51.100.30");
+    const sourceB = fromSource("198.51.100.31");
+    const window = Math.floor(Date.now() / 900_000);
+    const { db } = firebase();
+    const batch = db.batch();
+    // Seed exhausted buckets, including the next window so a clock boundary
+    // cannot make this scenario flaky. Counter increments have separate coverage.
+    for (const [scope, count] of [["csrf", 120], ["player-redeem", 60]] as const) {
+      for (const bucket of [window, window + 1]) batch.set(db.collection("rateLimits").doc(secretHash(`${scope}:${requestSource(sourceA)}:${bucket}`)), { count, expiresAt: Timestamp.fromMillis((bucket + 1) * 900_000) });
+    }
+    await batch.commit();
+    await assert.rejects(csrfResponse(sourceA), isStatus(429));
+    const otherCsrf = await csrfResponse(sourceB);
+    assert.ok(otherCsrf.body.csrfToken);
+    const created = await players.createPlayer(admin, { name: "Link entre origens", initialRating: 5 });
+    const token = new URLSearchParams(new URL(created.accessUrl).hash.slice(1)).get("token")!;
+    await assert.rejects(redeemPlayer(sourceA, { token }), isStatus(429));
+    const redeemed = await redeemPlayer(fromSource("198.51.100.31", otherCsrf.cookie), { token });
+    assert.equal(redeemed.body.role, "PLAYER");
+    assert.equal((await currentSession(request(redeemed.cookie))).playerId, created.player.id);
+  } finally {
+    if (previous === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = previous;
+  }
+});
 
 test("daily cleanup requires its own secret and removes only expired records", async () => {
   const old = process.env.CRON_SECRET;

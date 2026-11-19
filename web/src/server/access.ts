@@ -4,6 +4,7 @@ import { Timestamp } from "firebase-admin/firestore";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { ADMIN_ID, GROUP_ID, HttpError, fields, type Session } from "./context.ts";
 import { config, firebase } from "./firebase.ts";
+import { requestSource } from "./request-source.ts";
 
 const COOKIE = "futeio_session";
 const FORMAT = /^[A-Za-z0-9_-]{43}$/;
@@ -30,7 +31,7 @@ function cookie(value: string, maxAge: number) {
 
 const csrf = (token: string) => createHmac("sha256", config().secret).update(`futeio:csrf:v1:${token}`).digest("base64url");
 
-// Shared quotas deliberately do not trust user-supplied forwarding headers.
+// Keys are hashed; expiry is enforced independently of the daily cleanup.
 export async function rateLimit(scope: string, key: string, limit: number) {
   const { db } = firebase();
   const window = Math.floor(Date.now() / 900_000);
@@ -84,7 +85,7 @@ export async function currentSession(request: Request): Promise<Session> {
 
 export async function csrfResponse(request: Request) {
   const entry = await stored(request);
-  await rateLimit("csrf", entry?.data.identityId ?? "shared", 120);
+  await rateLimit("csrf", entry?.data.identityId ?? requestSource(request), 120);
   if (entry) return { body: { csrfToken: csrf(entry.raw) }, cookie: undefined };
   const token = newSecret();
   const now = Date.now();
@@ -120,8 +121,9 @@ export async function loginAdministrator(request: Request, input: unknown) {
   const body = fields(input, ["email", "password"]);
   if (typeof body.email !== "string" || body.email.length > 254 || typeof body.password !== "string" || !body.password || body.password.length > 256) throw new HttpError(400, "Dados inválidos.");
   const email = body.email.trim().toLowerCase();
-  await rateLimit("admin-login", "shared", 10);
-  await rateLimit("admin-email", email, 5);
+  const source = requestSource(request);
+  await rateLimit("admin-login-source", source, 20);
+  await rateLimit("admin-email-source", `${source}:${email}`, 5);
   const settings = config();
   const denied = () => new HttpError(401, "E-mail ou senha inválidos.");
   // Only this UID can become administrator, even if another Auth user has the same email.
@@ -155,7 +157,8 @@ async function finishAdministratorLogin(request: Request, decoded: DecodedIdToke
 export async function loginAdministratorWithGoogle(request: Request, input: unknown) {
   const body = fields(input, ["idToken"]);
   if (typeof body.idToken !== "string" || !body.idToken || body.idToken.length > 16_384) throw new HttpError(400, "Dados inválidos.");
-  await rateLimit("admin-login", "shared", 10);
+  const source = requestSource(request);
+  await rateLimit("admin-login-source", source, 20);
   let decoded: DecodedIdToken;
   try { decoded = await firebase().auth.verifyIdToken(body.idToken, true); }
   catch { throw new HttpError(401, "Conta não autorizada."); }
@@ -163,14 +166,14 @@ export async function loginAdministratorWithGoogle(request: Request, input: unkn
   if (decoded.firebase?.sign_in_provider !== "google.com" || !decoded.email_verified || !Number.isFinite(decoded.auth_time) || decoded.auth_time < now - 300 || decoded.auth_time > now + 60) {
     throw new HttpError(401, "Entre novamente com Google.");
   }
-  await rateLimit("admin-email", decoded.email?.toLowerCase() ?? "unknown", 5);
+  await rateLimit("admin-email-source", `${source}:${decoded.email?.toLowerCase() ?? "unknown"}`, 5);
   return finishAdministratorLogin(request, decoded);
 }
 
 export async function redeemPlayer(request: Request, input: unknown) {
   const body = fields(input, ["token"]);
   if (typeof body.token !== "string" || !FORMAT.test(body.token)) throw new HttpError(400, "Link inválido.");
-  await rateLimit("player-redeem", "shared", 60);
+  await rateLimit("player-redeem", requestSource(request), 60);
   const { db } = firebase();
   const hash = secretHash(body.token);
   const raw = newSecret();

@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { expect, test } from './fixtures';
+import { openGoogleAccountPicker } from './google-popup';
 import { TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD } from '../test/admin-fixture.mjs';
 
 test.beforeAll(() => {
@@ -12,11 +13,7 @@ test('browser Google login authorizes a PKCE-bound native session after explicit
   const challenge = createHash('sha256').update(verifier).digest('base64url');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/acesso/aplicativo?codeChallenge=${challenge}&state=${state}`);
-  const button = page.getByRole('button', { name: 'Entrar com Google', exact: true });
-  await expect(button).toBeEnabled({ timeout: 30_000 });
-  const opened = page.waitForEvent('popup');
-  await button.click();
-  const popup = await opened;
+  const popup = await openGoogleAccountPicker(page);
   await popup.getByText(TEST_ADMIN_EMAIL, { exact: true }).click();
   await expect(page.getByRole('button', { name: 'Autorizar aplicativo' })).toBeVisible();
   await expect(page).toHaveURL(/\/acesso\/aplicativo\?/);

@@ -1,4 +1,5 @@
 import { expect, test } from "./fixtures";
+import { openGoogleAccountPicker } from "./google-popup";
 import { TEST_ADMIN_EMAIL } from "../test/admin-fixture.mjs";
 
 test.beforeAll(() => {
@@ -17,10 +18,7 @@ test("Google creates an administrator cookie through the real Auth emulator popu
   const button = page.getByRole("button", { name: "Entrar com Google", exact: true });
   await expect(button).toBeEnabled({ timeout: 30_000 });
   await page.screenshot({ path: test.info().outputPath("mobile-google-login.png"), fullPage: true });
-  const opened = page.waitForEvent("popup");
-  await button.click();
-  const popup = await opened;
-  await expect(popup).toHaveURL(/^http:\/\/127\.0\.0\.1:9299\//);
+  const popup = await openGoogleAccountPicker(page);
   await popup.getByText(TEST_ADMIN_EMAIL, { exact: true }).click();
   try {
     await expect(page).toHaveURL(/\/administracao$/, { timeout: 20_000 });
@@ -41,11 +39,7 @@ test("Google creates an administrator cookie through the real Auth emulator popu
 test("an unapproved Google account cannot view the group and can recover the login form", async ({ page }) => {
   await page.goto("/entrar");
   const button = page.getByRole("button", { name: "Entrar com Google", exact: true });
-  await expect(button).toBeEnabled({ timeout: 30_000 });
-  const opened = page.waitForEvent("popup");
-  await button.click();
-  const popup = await opened;
-  await expect(popup).toHaveURL(/^http:\/\/127\.0\.0\.1:9299\//);
+  const popup = await openGoogleAccountPicker(page);
   await popup.getByRole("button", { name: "Add new account" }).click();
   await popup.locator("#email-input").fill("unapproved-browser@example.test");
   await popup.locator("#display-name-input").fill("Conta sem acesso");

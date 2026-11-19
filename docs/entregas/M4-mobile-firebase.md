@@ -38,7 +38,17 @@ Os overrides de dependências transitivas e a matriz de versões estão em [comp
 
 ## CI e publicação
 
-A evidência da execução Ubuntu e da publicação compatível será acrescentada após concluir a validação remota. Até esse registro, resultados locais não devem ser apresentados como execução em CI ou implantação desta branch.
+A [CI Ubuntu 24.04 do código `96c82bb`](https://github.com/roginaldosemog/futeio/actions/runs/44465572993) aprovou os dois jobs: histórico e validações web/mobile. Confirmou 77 testes web, 147 mobile, 34 integrações e 14 jornadas, além dos dez testes de scripts/regras, builds, contratos, matriz Expo e auditoria. Navegador executado: `/opt/google/chrome/chrome`, `158.0.8127.36`, sandbox ativa e nenhuma flag que a desative.
+
+A [primeira execução](https://github.com/roginaldosemog/futeio/actions/runs/44464309934) apresentou uma falha pontual no login Google web: permaneceu em `/entrar` por vinte segundos; as outras treze jornadas passaram. A comparação com `main` não demonstrou uma alteração do fluxo Google que explicasse o resultado. Foram acrescentados diagnósticos de fronteira ao E2E, sem credenciais, mudanças de timeout, retries ou relaxamento de autorização. A execução seguinte passou completa; a causa da ocorrência não foi comprovada e não deve ser apresentada como corrigida.
+
+O índice `nativeLoginGrants.expiresAt` foi publicado em `fute-io`. A consulta ao serviço confirmou índice ascendente, TTL desabilitado nas três coleções de limpeza e faturamento desabilitado (Spark).
+
+API publicada em [fute-io.vercel.app](https://fute-io.vercel.app), deployment `dpl_E339hB6yB1CkbyEcwP6Fkqo3M5o5`, estado `READY`, a partir desta branch. A `main` permanece em `3fd8942`, sem merge. A publicação mantém a instalação congelada do workspace e exclui o cliente mobile do upload web; os contratos compartilhados foram resolvidos no build da Vercel.
+
+Uma conferência HTTP autenticada em produção retornou os mesmos vinte jogadores pelos transportes Cookie e Bearer e a mesma projeção de avaliações, ocultando os autores alheios. As quinze verificações do protocolo nativo passaram, incluindo transporte inválido e logout. Jogadores, notas, fotos e sorteios não foram alterados; as sessões de prova foram encerradas. Mais quatorze verificações HTTP cobriram saúde, páginas, acesso anônimo, cookies seguros, rejeição de origem/credenciais inválidas e manutenção autenticada. No Chrome instalado, o login publicado permaneceu utilizável em viewport de 390 pixels, Google ficou disponível, administração anônima redirecionou e não ocorreram erros JavaScript.
+
+O teste em produção exercitou o protocolo HTTP, não um aparelho nativo. Login interativo real do administrador e retorno Google em Android/iPhone não foram repetidos nesta entrega; o proprietário havia confirmado Google e senha na publicação anterior. Testes com contas sintéticas no emulador são evidência distinta.
 
 ## Limitações
 

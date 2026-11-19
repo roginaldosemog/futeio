@@ -1,6 +1,6 @@
 # Segurança do piloto
 
-O fute.io está em piloto privado com um grupo. Apenas `main` representa a versão mantida do website. Código revisado e CI aprovada reduzem riscos; não constituem garantia de ausência de vulnerabilidades.
+O fute.io está em piloto privado com um grupo. `main` é a base estável; a adaptação mobile permanece em branch separada. A versão efetivamente publicada está registrada na entrega M4. Código revisado e CI aprovada reduzem riscos; não constituem garantia de ausência de vulnerabilidades.
 
 ## Reportar um problema
 

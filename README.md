@@ -1,6 +1,6 @@
 # fute.io — web e mobile com a mesma API
 
-Website da pelada piloto, mantido na `main`, com servidor no próprio Next.js. Publicação na Vercel Hobby, Firebase Spark para Auth/Firestore e Vercel Blob privado para fotos. A disponibilidade da publicação e os testes executados ficam registrados nas entregas; configuração preparada não significa publicação concluída.
+Website da pelada piloto, com servidor no próprio Next.js, e aplicativo Expo nesta branch. Publicação na Vercel Hobby, Firebase Spark para Auth/Firestore e Vercel Blob privado para fotos. A disponibilidade da publicação e os testes executados ficam registrados nas entregas; configuração preparada não significa publicação concluída.
 
 Piloto publicado: **[fute-io.vercel.app](https://fute-io.vercel.app)**. Login do administrador: [entrar](https://fute-io.vercel.app/entrar). A publicação e suas verificações estão na [entrega F2](docs/entregas/F2-google-spark-vercel.md).
 

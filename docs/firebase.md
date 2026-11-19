@@ -2,7 +2,7 @@
 
 Decisão vigente: [ADR 0010](adr/0010-vercel-spark-blob-privado.md). Não ative Blaze para este piloto. App Hosting, Cloud Storage e TTL gerenciado não são usados em produção.
 
-O piloto foi publicado em [fute-io.vercel.app](https://fute-io.vercel.app), projeto Vercel `fute-io`, escopo Hobby `igor-gomes-projects`, com Firebase `fute-io`. O domínio próprio `fute.io` não foi comprado ou configurado. A versão inicial foi publicada a partir de `codex/website-firebase`; a preparação de colaboração promove o website para `main`, que passa a ser a origem das próximas publicações. A integração de deploy automático por Git não está conectada. Fazer push no GitHub executa a CI, mas não publica sozinho na Vercel. Veja as [evidências e limitações iniciais](entregas/F2-google-spark-vercel.md) e a [preparação da main](entregas/F3-colaboracao-privada.md).
+O piloto foi publicado em [fute-io.vercel.app](https://fute-io.vercel.app), projeto Vercel `fute-io`, escopo Hobby `igor-gomes-projects`, com Firebase `fute-io`. O domínio próprio `fute.io` não foi comprado ou configurado. A versão inicial foi publicada a partir de `codex/website-firebase`; a preparação de colaboração promoveu o website para `main`, a base estável. A API compatível com mobile foi publicada a partir da branch `codex/mobile-firebase-api`, sem merge na principal; veja [M4](entregas/M4-mobile-firebase.md). A integração de deploy automático por Git não está conectada. Fazer push no GitHub executa a CI, mas não publica sozinho na Vercel. Veja as [evidências e limitações iniciais](entregas/F2-google-spark-vercel.md) e a [preparação da main](entregas/F3-colaboracao-privada.md).
 
 ## Contas e administrador
 
@@ -43,11 +43,13 @@ Rules negam acesso direto do cliente ao Firestore. O Admin SDK usa IAM e exige a
 2. Em Authentication > Settings > Authorized domains, acrescente o hostname da produção Vercel, preservando os existentes. Confirme também Google habilitado. Se usar domínio próprio depois, atualize `APP_ORIGIN`, os domínios autorizados e publique novamente.
 3. Execute os checks do README e publique com a CLI autenticada: `pnpm dlx vercel@66.1.0 --prod`, com projeto/root directory previamente vinculados. Revise os arquivos incluídos; `.env.firebase`, `.firebase`, `.vercel`, caches e chaves não podem entrar no upload. A CLI não deve conectar um plano pago automaticamente.
 
-   No `.vercelignore`, `/api/` e `/mobile/` excluem somente workspaces antigos na raiz. Não use `api` sem ancoragem: esse padrão também exclui `web/src/app/api`. Confirme que o build publicado lista `/api/v1/[...path]` e `/api/maintenance`, além de testar os endpoints na URL real.
+   No `.vercelignore`, `/api/` exclui o workspace antigo e `/mobile/` mantém o cliente nativo fora do upload web. Preserve `packages/contracts` no upload: web e mobile compartilham os tipos REST. Não use `api` sem ancoragem: esse padrão também exclui `web/src/app/api`. Confirme que o build publicado lista `/api/v1/[...path]`, `/api/maintenance` e `/acesso/aplicativo`, além de testar os endpoints na URL real.
 4. Verifique login Google e e-mail/senha com o UID configurado, rejeição de outro UID, logout, link do jogador, edição de perfil/foto, avaliações e sorteio. Testes com emulador são evidência distinta do login real publicado.
 5. Confirme que o cron diário `/api/maintenance` está ativo no deployment de produção. A Vercel envia `Authorization: Bearer CRON_SECRET`; chamadas sem o segredo recebem 401. Não coloque o segredo na URL.
 
-A limpeza remove até 500 sessões e 500 registros de rate limit vencidos por dia. Usa precondição de versão para não apagar documentos alterados após a leitura. Expiração é validada em cada requisição mesmo se o cron atrasar/falhar. Falhas retornam 503 e geram evento genérico sem segredos. Se houver acúmulo, execute a rotina de forma autenticada e investigue antes de ampliar o limite. Fotos órfãs exigem reconciliação manual em janela sem uploads, confirmando que nenhum perfil referencia o objeto.
+A limpeza remove até 500 documentos vencidos por coleção/dia: sessões, rate limits e grants de login nativo. Usa precondição de versão para não apagar documentos alterados após a leitura. Expiração é validada em cada requisição mesmo se o cron atrasar/falhar. Falhas retornam 503 e geram evento genérico sem segredos. Se houver acúmulo, execute a rotina de forma autenticada e investigue antes de ampliar o limite. Fotos órfãs exigem reconciliação manual em janela sem uploads, confirmando que nenhum perfil referencia o objeto.
+
+O mobile usa os mesmos endereços HTTPS da publicação, sem novas variáveis privadas ou clientes OAuth Google nativos. Publique o índice `nativeLoginGrants.expiresAt` antes de habilitar o app. O Google abre a página web de autorização e requer aplicativo instalado para retornar pelo scheme; veja [ADR 0012](adr/0012-mobile-na-api-firebase.md). Não coloque credenciais Production em Expo/EAS ou no bundle.
 
 ## Operação e limites
 

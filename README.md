@@ -1,10 +1,10 @@
 # fute.io — web e mobile com a mesma API
 
-Website da pelada piloto, com servidor no próprio Next.js, e aplicativo Expo nesta branch. Publicação na Vercel Hobby, Firebase Spark para Auth/Firestore e Vercel Blob privado para fotos. A disponibilidade da publicação e os testes executados ficam registrados nas entregas; configuração preparada não significa publicação concluída.
+Website da pelada piloto, com servidor no próprio Next.js, e aplicativo Expo reunidos na `main`. Publicação na Vercel Hobby, Firebase Spark para Auth/Firestore e Vercel Blob privado para fotos. O código é público; perfis, avaliações, fotos e acessos da pelada continuam privados. A disponibilidade da publicação e os testes executados ficam registrados nas entregas; configuração preparada não significa publicação concluída.
 
 Piloto publicado: **[fute-io.vercel.app](https://fute-io.vercel.app)**. Login do administrador: [entrar](https://fute-io.vercel.app/entrar). A publicação e suas verificações estão na [entrega F2](docs/entregas/F2-google-spark-vercel.md).
 
-Esta branch restaura o aplicativo Expo e o conecta à API do website, com os mesmos dados Firebase e fotos privadas. NestJS e PostgreSQL/Prisma permanecem nos tags de arquivo. Dados e sessões desses serviços antigos **não são migrados**. As decisões anteriores estão em `docs/history/`; não use os comandos históricos nesta branch.
+O aplicativo Expo usa a API do website, com os mesmos dados Firebase e fotos privadas. NestJS e PostgreSQL/Prisma permanecem nos tags de arquivo. Dados e sessões desses serviços antigos **não são migrados**. As decisões anteriores estão em `docs/history/`; não use os comandos históricos na versão atual.
 
 ## Rodar sem conta Firebase
 
@@ -47,6 +47,8 @@ Veja [a decisão de hospedagem](docs/adr/0010-vercel-spark-blob-privado.md), [a 
 
 Login Google, preparação Spark/Vercel e verificações: [entrega F2](docs/entregas/F2-google-spark-vercel.md).
 
-## Colaboração privada
+## Colaboração
 
-Leia [CONTRIBUTING.md](CONTRIBUTING.md) e [SECURITY.md](SECURITY.md). O repositório permanece privado; a preparação da `main`, o levantamento do histórico e as proteções efetivamente disponíveis estão registrados na [entrega F3](docs/entregas/F3-colaboracao-privada.md). A configuração de proteção de branch está preparada, mas o GitHub exige um plano compatível para aplicá-la enquanto o repositório for privado.
+Leia [CONTRIBUTING.md](CONTRIBUTING.md) e [SECURITY.md](SECURITY.md). A política da `main` está em [.github/main-protection.json](.github/main-protection.json): pull request, CI obrigatória fornecida pelo GitHub Actions, histórico linear e bloqueio de force push/exclusão, inclusive para administradores. A preparação inicial está em [F3](docs/entregas/F3-colaboracao-privada.md); a integração e revisão para abertura, em [F4](docs/entregas/F4-repositorio-publico.md). Confira a configuração efetiva no GitHub antes de inferir proteção apenas pelos arquivos.
+
+Uma licença de reutilização ainda não foi definida pelo mantenedor.

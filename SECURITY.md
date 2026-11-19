@@ -1,10 +1,10 @@
 # Segurança do piloto
 
-O fute.io está em piloto privado com um grupo. `main` é a base estável; a adaptação mobile permanece em branch separada. A versão efetivamente publicada está registrada na entrega M4. Código revisado e CI aprovada reduzem riscos; não constituem garantia de ausência de vulnerabilidades.
+O código do fute.io é público e a pelada continua restrita aos membros. `main` reúne web e mobile; a versão efetivamente publicada está registrada nas entregas. Código revisado e CI aprovada reduzem riscos; não constituem garantia de ausência de vulnerabilidades.
 
 ## Reportar um problema
 
-Avise o administrador diretamente pelo canal privado do grupo. Não coloque em issues, pull requests, logs ou screenshots públicos senhas, tokens, cookies, chaves ou links pessoais de jogadores. Antes de tornar o repositório público, habilite um canal de relato privado para pessoas externas ao grupo.
+Use [Report a vulnerability](https://github.com/roginaldosemog/futeio/security/advisories/new) para relatar uma vulnerabilidade de forma privada ao mantenedor. Participantes também podem usar o canal privado do grupo. Não coloque em issues, pull requests, logs ou screenshots públicos senhas, tokens, cookies, chaves ou links pessoais de jogadores. Se o formulário privado estiver indisponível, não publique o segredo em uma issue.
 
 Se uma credencial vazar, revogue/substitua no serviço responsável, verifique acessos e só então trate o arquivo/histórico. Remover o texto do último commit não invalida a credencial.
 
@@ -17,10 +17,10 @@ Se uma credencial vazar, revogue/substitua no serviço responsável, verifique a
 - Login: 20 tentativas por origem em 15 minutos, compartilhadas entre Google e senha; até 5 por origem/e-mail. CSRF anônimo: 120 por origem; resgate de link: 60 por origem, na mesma janela.
 - Em produção, origem é o IP único informado pelo ingress Vercel em `x-vercel-forwarded-for`, somente quando o ambiente da plataforma está presente. Cabeçalhos genéricos e cookies não definem a origem. IP bruto não é armazenado: a chave usa HMAC com segredo do servidor. Ambiente local usa uma origem única para os emuladores.
 - Produção sem uma origem confiável falha com 503. Ao mudar de hospedagem/proxy, revise explicitamente essa fronteira antes de publicar. Pessoas na mesma rede/IP compartilham os limites. Isso não protege contra todo ataque distribuído nem garante disponibilidade nas cotas gratuitas.
-- CI utiliza apenas emuladores/contas sintéticas. Tokens de Actions têm leitura; forks privados não recebem credenciais ou tokens de escrita. As regras do repositório devem ser verificadas no GitHub, não inferidas apenas dos arquivos.
+- CI utiliza apenas emuladores/contas sintéticas. Tokens de Actions têm leitura, não aprovam PRs e não persistem credenciais do checkout. Workflows de forks externos exigem aprovação; não recebem credenciais de produção. As regras do repositório devem ser verificadas no GitHub, não inferidas apenas dos arquivos.
 
-## Histórico e abertura futura
+## Histórico e abertura
 
 Gitleaks está fixado em 8.30.1 e o binário da CI tem SHA-256 verificado. O scanner examina todo o histórico e refs obtidos pelo checkout, com saída redigida. Relatórios locais ficam em `.firebase/security`, fora do Git. Uma varredura sem achados cobre os padrões detectados, não prova que qualquer tipo de segredo esteja ausente.
 
-Antes de abrir: repetir a varredura e revisar logs/artefatos recentes, confirmar ausência de dados reais e links, manter previews separados de produção, definir licença/canal privado de relatos, habilitar as proteções GitHub disponíveis e conferir sua aplicação após mudar a visibilidade. Nenhum comando desta preparação muda a visibilidade ou contrata um plano.
+A revisão para abertura está registrada em `docs/entregas/F4-repositorio-publico.md`. Previews continuam separados de produção; credenciais e links reais permanecem em arquivos locais ignorados ou no ambiente Production da Vercel. A política inclui proteção da `main`, relatos privados, alertas e proteção de segredos disponíveis para repositórios públicos, sem contratar plano pago. A licença de reutilização permanece a definir; a mudança de visibilidade não acrescenta um arquivo de licença.

@@ -8,7 +8,7 @@ Na raiz, use Node 24.22.1 e pnpm 11.25.0:
 
 ```sh
 git fetch origin
-git switch codex/mobile-firebase-api
+git switch main
 pnpm install --frozen-lockfile
 cp mobile/.env.example mobile/.env
 pnpm dev:mobile
